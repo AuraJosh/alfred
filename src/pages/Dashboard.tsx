@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../hooks/useStore';
-import { LogOut, Plus, Activity } from 'lucide-react';
+import { LogOut, Plus, Activity, Fingerprint } from 'lucide-react';
 import { NewTrackerModal } from '../components/modules/NewTrackerModal';
 import { TrackerWidget } from '../components/dashboard/TrackerWidget';
 import { TrackerExpandedModal } from '../components/dashboard/TrackerExpandedModal';
@@ -17,7 +17,7 @@ import { IntelligenceModule } from '../components/modules/IntelligenceModule';
 import { ChatWidget } from '../components/modules/ChatWidget';
 
 export const Dashboard: React.FC = () => {
-    const { user, signOut } = useAuth();
+    const { user, signOut, enableBiometrics, isBiometricEnabled } = useAuth();
     const { trackers, logs, loading, addLog, deleteTracker } = useStore();
     const { addToast, showPrompt, showConfirm } = useUI();
     const [showNewTracker, setShowNewTracker] = React.useState(false);
@@ -25,6 +25,15 @@ export const Dashboard: React.FC = () => {
 
     const standardTrackers = trackers.filter(t => !t.isDaysSince);
     const daysSinceTrackers = trackers.filter(t => t.isDaysSince);
+
+    const handleEnableBiometrics = async () => {
+        try {
+            await enableBiometrics();
+            addToast("FaceID Enabled!", "success");
+        } catch (err) {
+            addToast("Could not setup Biometrics.", "error");
+        }
+    };
 
     // Helper function to handle a quick logging action
     const handleQuickLog = async (trackerId: string, type: string, payload?: any) => {
@@ -69,19 +78,30 @@ export const Dashboard: React.FC = () => {
                     <h1 className="text-3xl font-bold tracking-tight mb-1 text-zinc-100">Alfred</h1>
                     <p className="text-sm text-zinc-400">Welcome back, Master {user?.displayName?.split(' ')[0] || 'Wayne'}.</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-2 sm:gap-3">
+                    {!isBiometricEnabled && (
+                        <button
+                            onClick={handleEnableBiometrics}
+                            className="flex items-center px-3 py-2 text-sm font-medium text-indigo-400 hover:text-white bg-indigo-500/10 hover:bg-indigo-500 rounded-lg border border-indigo-500/20 transition-all"
+                            title="Setup FaceID"
+                        >
+                            <Fingerprint className="w-4 h-4 sm:mr-2" />
+                            <span className="hidden sm:inline">Setup FaceID</span>
+                        </button>
+                    )}
                     <button
                         onClick={() => setShowNewTracker(true)}
-                        className="flex items-center px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors shadow-sm"
+                        className="flex items-center px-3 sm:px-4 py-2 text-sm font-medium text-white bg-amber-600 hover:bg-amber-700 rounded-lg transition-colors shadow-sm"
                     >
-                        <Plus className="w-4 h-4 mr-2" />
-                        New Tracker
+                        <Plus className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">New Tracker</span>
+                        <span className="sm:hidden">New</span>
                     </button>
                     <button
                         onClick={signOut}
                         className="flex items-center px-3 py-2 text-sm font-medium text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 rounded-lg border border-zinc-800 transition-colors"
                     >
-                        <LogOut className="w-4 h-4 hidden sm:block sm:mr-2" />
+                        <LogOut className="w-4 h-4 sm:mr-2" />
                         <span className="hidden sm:inline">Sign Out</span>
                     </button>
                 </div>
