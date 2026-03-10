@@ -1,0 +1,7 @@
+src/components/modules/NewTrackerModal.tsx(2,26): error TS2307: Cannot find module '../hooks/useStore' or its corresponding type declarations.
+src/components/modules/NewTrackerModal.tsx(3,10): error TS6133: 'PlusCircle' is declared but its value is never read.
+src/components/modules/NewTrackerModal.tsx(4,29): error TS2307: Cannot find module '../types' or its corresponding type declarations.
+src/hooks/useStore.ts(2,56): error TS6133: 'serverTimestamp' is declared but its value is never read.
+src/hooks/useStore.ts(4,10): error TS1484: 'Tracker' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/hooks/useStore.ts(4,19): error TS1484: 'LogEntry' is a type and must be imported using a type-only import when 'verbatimModuleSyntax' is enabled.
+src/hooks/useStore.ts(15,52): error TS6133: 'get' is declared but its value is never read.
