@@ -25,7 +25,7 @@ export const ScratchpadModule: React.FC = () => {
     const handleNextDay = () => setViewDate(prev => addDays(prev, 1));
     const handleToday = () => setViewDate(new Date());
 
-    const handleAdd = (e: React.FormEvent) => {
+    const handleAdd = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input.trim()) return;
 
@@ -36,9 +36,13 @@ export const ScratchpadModule: React.FC = () => {
             return d.toISOString();
         })();
 
-        addEntry(input.trim(), timestamp);
-        setInput('');
-        addToast("Note added to journal", "success");
+        try {
+            await addEntry(input.trim(), timestamp);
+            setInput('');
+            addToast("Note added to journal", "success");
+        } catch (err) {
+            addToast("Failed to save entry securely", "error");
+        }
     };
 
     const handleDelete = (id: string) => {
@@ -46,9 +50,13 @@ export const ScratchpadModule: React.FC = () => {
             title: "Delete Entry?",
             message: "Are you sure you want to permanently delete this journal entry?",
             confirmText: "Delete",
-            onConfirm: () => {
-                deleteEntry(id);
-                addToast("Entry deleted", "info");
+            onConfirm: async () => {
+                try {
+                    await deleteEntry(id);
+                    addToast("Entry deleted", "info");
+                } catch (err) {
+                    addToast("Failed to delete entry", "error");
+                }
             }
         });
     };
