@@ -116,7 +116,7 @@ export const ScratchpadModule: React.FC = () => {
                                 </div>
                                 <button
                                     onClick={() => handleDelete(entry.id)}
-                                    className="opacity-0 group-hover:opacity-100 p-2 text-zinc-600 hover:text-red-400 transition-all shrink-0 self-start hover:bg-zinc-800 rounded-lg"
+                                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 p-2 text-zinc-600 hover:text-red-400 transition-all shrink-0 self-start hover:bg-zinc-800 rounded-lg"
                                     title="Delete Entry"
                                 >
                                     <Trash2 className="w-4 h-4" />

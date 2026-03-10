@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
@@ -18,7 +18,7 @@ function App() {
 
   return (
     <UIProvider>
-      <HashRouter>
+      <BrowserRouter>
         <Routes>
           <Route
             path="/login"
@@ -33,7 +33,7 @@ function App() {
             element={user ? <WithingsCallback /> : <Navigate to="/login" replace />}
           />
         </Routes>
-      </HashRouter>
+      </BrowserRouter>
     </UIProvider>
   );
 }
