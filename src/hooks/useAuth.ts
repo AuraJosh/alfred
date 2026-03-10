@@ -26,8 +26,8 @@ export const useAuth = create<AuthState>((set, get) => ({
         set({
             user,
             loading: false,
-            // Only lock if biometrics are enabled AND we have a user
-            isLocked: (get().isBiometricEnabled && !!user)
+            // If biometrics are active, we stay locked until unlock() is called manually
+            isLocked: get().isBiometricEnabled ? get().isLocked : false
         });
     },
 

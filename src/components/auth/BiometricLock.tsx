@@ -28,7 +28,7 @@ export const BiometricLock: React.FC = () => {
 
             <h1 className="text-2xl font-bold text-white mb-2">Alfred is Locked</h1>
             <p className="text-zinc-400 mb-10 max-w-xs">
-                Welcome back, {user?.displayName?.split(' ')[0] || 'Master'}. Please verify your identity to continue.
+                {user ? `Welcome back, ${user.displayName?.split(' ')[0]}.` : "Please verify your identity to continue."}
             </p>
 
             <div className="flex flex-col gap-4 w-full max-w-xs">

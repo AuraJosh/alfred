@@ -37,7 +37,7 @@ interface WithingsState {
 
 const CLIENT_ID = import.meta.env.VITE_WITHINGS_CLIENT_ID;
 const CLIENT_SECRET = import.meta.env.VITE_WITHINGS_CLIENT_SECRET;
-const REDIRECT_URI = 'http://localhost:5173/withings-callback';
+const REDIRECT_URI = window.location.origin + '/withings-callback';
 
 export const useWithingsStore = create<WithingsState>((set) => {
 
