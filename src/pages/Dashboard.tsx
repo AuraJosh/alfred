@@ -220,7 +220,7 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed">
-                <h2 className="text-xl font-bold text-zinc-300">Deep Work & Study</h2>
+                <h2 className="text-xl font-bold text-zinc-300">Deep Work & Study v2</h2>
                 <StudyModule />
             </div>
 
