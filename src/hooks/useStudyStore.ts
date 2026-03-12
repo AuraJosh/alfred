@@ -32,6 +32,8 @@ interface StudyState {
     addTask: (subject: string, module: string, content: string) => Promise<void>;
     toggleTask: (id: string, isCompleted: boolean) => Promise<void>;
     deleteTask: (id: string) => Promise<void>;
+    updateSession: (id: string, updates: Partial<StudySession>) => Promise<void>;
+    deleteSession: (id: string) => Promise<void>;
 }
 
 export const useStudyStore = create<StudyState>((set) => {
@@ -106,6 +108,12 @@ export const useStudyStore = create<StudyState>((set) => {
 
         deleteTask: async (id) => {
             await deleteDoc(doc(db, 'study_tasks', id));
+        },
+        updateSession: async (id, updates) => {
+            await updateDoc(doc(db, 'study_sessions', id), updates);
+        },
+        deleteSession: async (id) => {
+            await deleteDoc(doc(db, 'study_sessions', id));
         }
     };
 });

@@ -1,7 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { X, ChevronLeft, ChevronRight, Calendar, Clock, BookOpen, FileText } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, Calendar, Clock, BookOpen, FileText, Trash2 } from 'lucide-react';
 import { format, subDays, addDays, isSameDay, parseISO } from 'date-fns';
+import { useStudyStore } from '../../hooks/useStudyStore';
 import type { StudySession } from '../../hooks/useStudyStore';
+
+const SUBJECTS = ["Maths", "General", "Business"];
 
 interface StudyHistoryModalProps {
     sessions: StudySession[];
@@ -9,11 +12,30 @@ interface StudyHistoryModalProps {
 }
 
 export const StudyHistoryModal: React.FC<StudyHistoryModalProps> = ({ sessions, onClose }) => {
+    const { updateSession, deleteSession } = useStudyStore();
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
 
     const handlePrevDay = () => setSelectedDate(prev => subDays(prev, 1));
     const handleNextDay = () => setSelectedDate(prev => addDays(prev, 1));
     const handleToday = () => setSelectedDate(new Date());
+
+    const handleUpdateSubject = async (sessionId: string, newSubject: string) => {
+        try {
+            await updateSession(sessionId, { subject: newSubject });
+        } catch (err) {
+            console.error("Failed to update session subject", err);
+        }
+    };
+
+    const handleDeleteSession = async (sessionId: string) => {
+        if (window.confirm("Are you sure you want to delete this session?")) {
+            try {
+                await deleteSession(sessionId);
+            } catch (err) {
+                console.error("Failed to delete session", err);
+            }
+        }
+    };
 
     // Get sessions for the selected day
     const daySessions = useMemo(() => {
@@ -98,9 +120,17 @@ export const StudyHistoryModal: React.FC<StudyHistoryModalProps> = ({ sessions, 
                             {daySessions.map((session) => (
                                 <div key={session.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 transition-all hover:bg-zinc-800/50">
                                     <div className="flex justify-between items-start mb-2">
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-3">
                                             <div className="w-2 h-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" />
-                                            <h4 className="font-semibold text-zinc-100 text-base">{session.subject}</h4>
+                                            <select
+                                                value={session.subject}
+                                                onChange={(e) => handleUpdateSubject(session.id, e.target.value)}
+                                                className="bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1 text-sm text-zinc-100 focus:outline-none focus:border-purple-500 font-semibold"
+                                            >
+                                                {SUBJECTS.map(sub => (
+                                                    <option key={sub} value={sub}>{sub}</option>
+                                                ))}
+                                            </select>
                                         </div>
                                         <div className="flex items-center gap-3">
                                             <span className="text-xs font-mono text-zinc-500 flex items-center gap-1">
@@ -110,6 +140,13 @@ export const StudyHistoryModal: React.FC<StudyHistoryModalProps> = ({ sessions, 
                                             <span className="text-sm font-mono font-bold text-zinc-300 bg-zinc-950 px-2 py-1 rounded-md border border-zinc-800">
                                                 {session.durationMinutes}m
                                             </span>
+                                            <button
+                                                onClick={() => handleDeleteSession(session.id)}
+                                                className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
+                                                title="Delete Session"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
                                         </div>
                                     </div>
 
