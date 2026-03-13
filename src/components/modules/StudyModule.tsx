@@ -50,6 +50,14 @@ function formatDuration(ms: number): string {
     return `${secs}s`;
 }
 
+/** Format minutes → "Xh Ym" or "Ym" */
+export function formatMinutes(mins: number): string {
+    const hrs = Math.floor(mins / 60);
+    const m = Math.round(mins % 60);
+    if (hrs > 0) return m > 0 ? `${hrs}h ${m}m` : `${hrs}h`;
+    return `${m}m`;
+}
+
 const EVENT_LABELS: Record<SessionEvent['type'], string> = {
     start: 'Session started',
     pause: 'Paused',
@@ -309,7 +317,7 @@ export const StudyModule: React.FC = () => {
                     <div>
                         <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">Today</p>
                         <div className="text-3xl font-black text-purple-400">
-                            {Math.floor(activeTodayMins / 60)}h {Math.floor(activeTodayMins % 60)}m
+                            {formatMinutes(activeTodayMins)}
                         </div>
                     </div>
                     <button
@@ -343,7 +351,7 @@ export const StudyModule: React.FC = () => {
                                         <CheckCircle2 className="w-4 h-4 text-purple-500 shrink-0" />
                                         <p className="font-medium text-zinc-200 text-sm truncate">{session.subject}</p>
                                     </div>
-                                    <p className="text-xs font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800 shrink-0">{session.durationMinutes}m</p>
+                                    <p className="text-xs font-mono text-zinc-400 bg-zinc-950 px-2 py-0.5 rounded border border-zinc-800 shrink-0">{formatMinutes(session.durationMinutes)}</p>
                                 </div>
                                 {session.notes && (
                                     <p className="text-xs text-zinc-500 mt-1 pl-6 italic break-words line-clamp-2">

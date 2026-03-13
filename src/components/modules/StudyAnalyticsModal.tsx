@@ -1,6 +1,7 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { BookType, X } from 'lucide-react';
+import { formatMinutes } from './StudyModule';
 
 interface StudyAnalyticsModalProps {
     onClose: () => void;
@@ -28,7 +29,7 @@ export const StudyAnalyticsModal: React.FC<StudyAnalyticsModalProps> = ({ onClos
                         <div className="text-right">
                             <p className="text-[10px] text-zinc-500 uppercase tracking-widest leading-none">Today's Total</p>
                             <p className="text-2xl font-bold text-purple-400 leading-none mt-1">
-                                {Math.floor(activeTodayMins / 60)}h {Math.floor(activeTodayMins % 60)}m
+                                {formatMinutes(activeTodayMins)}
                             </p>
                         </div>
                     </div>
@@ -48,7 +49,7 @@ export const StudyAnalyticsModal: React.FC<StudyAnalyticsModalProps> = ({ onClos
                                     contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#fff', fontSize: '14px', borderRadius: '8px' }}
                                     itemStyle={{ color: '#a855f7' }}
                                     labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
-                                    formatter={(value: any) => [`${value} minutes`, 'Time']}
+                                    formatter={(value: any) => [formatMinutes(Number(value)), 'Time']}
                                 />
                                 <Area type="monotone" dataKey="minutes" stroke="#a855f7" strokeWidth={3} fillOpacity={1} fill="url(#colorMinutesLarge)" />
                             </AreaChart>

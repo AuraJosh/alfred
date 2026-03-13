@@ -3,6 +3,7 @@ import { X, ChevronLeft, ChevronRight, Calendar, Clock, BookOpen, FileText, Tras
 import { format, subDays, addDays, isSameDay, parseISO } from 'date-fns';
 import { useStudyStore } from '../../hooks/useStudyStore';
 import type { StudySession } from '../../hooks/useStudyStore';
+import { formatMinutes } from './StudyModule';
 
 const SUBJECTS = ["Maths", "General", "Business"];
 
@@ -100,7 +101,7 @@ export const StudyHistoryModal: React.FC<StudyHistoryModalProps> = ({ sessions, 
                 <div className="px-6 py-4 bg-zinc-900/10 shrink-0 flex items-center gap-4">
                     <div className="flex items-center gap-2 bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-lg border border-purple-500/20">
                         <Clock className="w-4 h-4" />
-                        <span className="text-sm font-bold">Total: {totalMinutes}m</span>
+                        <span className="text-sm font-bold">Total: {formatMinutes(totalMinutes)}</span>
                     </div>
                     <div className="flex items-center gap-2 bg-amber-500/10 text-amber-400 px-3 py-1.5 rounded-lg border border-amber-500/20">
                         <BookOpen className="w-4 h-4" />
@@ -138,7 +139,7 @@ export const StudyHistoryModal: React.FC<StudyHistoryModalProps> = ({ sessions, 
                                                 {format(parseISO(session.timestamp), 'h:mm a')}
                                             </span>
                                             <span className="text-sm font-mono font-bold text-zinc-300 bg-zinc-950 px-2 py-1 rounded-md border border-zinc-800">
-                                                {session.durationMinutes}m
+                                                {formatMinutes(session.durationMinutes)}
                                             </span>
                                             <button
                                                 onClick={() => handleDeleteSession(session.id)}
