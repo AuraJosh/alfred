@@ -33,6 +33,11 @@ export interface VitalData {
     vitals_score?: number;
 }
 
+export interface IntradayHeartRate {
+    timestamp: string;
+    hr: number;
+}
+
 export interface WithingsWorkout {
     id: number;
     category: number;
@@ -52,7 +57,9 @@ interface WithingsState {
     workouts: WithingsWorkout[];
     vitals: VitalData | null;
     weeklyVitals: VitalData[];
+    intradayHR: IntradayHeartRate[];
     fetchVitalData: () => Promise<void>;
+    fetchIntradayHR: () => Promise<void>;
     connect: () => void;
     exchangeCode: (code: string) => Promise<void>;
     fetchSleepData: () => Promise<void>;
@@ -119,6 +126,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
         workouts: [],
         vitals: null,
         weeklyVitals: [],
+        intradayHR: [],
 
         connect: () => {
             const scope = encodeURIComponent('user.info,user.metrics,user.activity,user.heart,user.sleepevents');
@@ -344,6 +352,49 @@ export const useWithingsStore = create<WithingsState>((set) => {
                 }
             } catch (err) {
                 console.error("Failed to fetch vitals data", err);
+            } finally {
+                set({ loading: false });
+            }
+        },
+
+        fetchIntradayHR: async () => {
+            let tokens = await getTokens();
+            if (!tokens) return;
+
+            set({ loading: true });
+            try {
+                if (Date.now() > tokens.expires_at - 300000) {
+                    const newAccess = await refreshTokens(tokens.refresh_token);
+                    tokens.access_token = newAccess;
+                }
+
+                // Fetch last 12 hours of heart rate data (intraday)
+                const hrParams = new URLSearchParams({
+                    action: 'getmeas',
+                    meastypes: '11',
+                    category: '1',
+                    startdate: Math.floor(subDays(new Date(), 1).getTime() / 1000).toString(),
+                    enddate: Math.floor(new Date().getTime() / 1000).toString(),
+                });
+
+                const res = await fetch(`/api/withings/v2/measure?${hrParams.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+                });
+
+                const data = await res.json();
+                if (data.status === 0 && data.body.measuregrps) {
+                    const hrData: IntradayHeartRate[] = data.body.measuregrps
+                        .filter((g: any) => g.measures.some((m: any) => m.type === 11))
+                        .map((g: any) => ({
+                            timestamp: new Date(g.date * 1000).toISOString(),
+                            hr: g.measures.find((m: any) => m.type === 11).value * Math.pow(10, g.measures.find((m: any) => m.type === 11).unit)
+                        }))
+                        .sort((a: any, b: any) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                    
+                    set({ intradayHR: hrData });
+                }
+            } catch (err) {
+                console.error("Failed to fetch intraday HR data", err);
             } finally {
                 set({ loading: false });
             }

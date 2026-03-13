@@ -17,6 +17,7 @@ import { IntelligenceModule } from '../components/modules/IntelligenceModule';
 import { ShoppingListModule } from '../components/modules/ShoppingListModule';
 import { WithingsWorkoutsModule } from '../components/modules/WithingsWorkoutsModule';
 import { HealthTrendModule } from '../components/modules/HealthTrendModule';
+import { ThreePillarsModule } from '../components/modules/ThreePillarsModule';
 import { ChatWidget } from '../components/modules/ChatWidget';
 
 export const Dashboard: React.FC = () => {
@@ -254,6 +255,7 @@ export const Dashboard: React.FC = () => {
                 <SleepModule />
                 <WithingsWorkoutsModule />
                 <HealthTrendModule />
+                <ThreePillarsModule />
             </div>
 
             {showNewTracker && <NewTrackerModal onClose={() => setShowNewTracker(false)} />}
