@@ -16,6 +16,7 @@ import { SleepModule } from '../components/modules/SleepModule';
 import { IntelligenceModule } from '../components/modules/IntelligenceModule';
 import { ShoppingListModule } from '../components/modules/ShoppingListModule';
 import { WithingsWorkoutsModule } from '../components/modules/WithingsWorkoutsModule';
+import { HealthTrendModule } from '../components/modules/HealthTrendModule';
 import { ChatWidget } from '../components/modules/ChatWidget';
 
 export const Dashboard: React.FC = () => {
@@ -252,6 +253,7 @@ export const Dashboard: React.FC = () => {
                 <h2 className="text-xl font-bold text-zinc-300">Sleep & Recovery</h2>
                 <SleepModule />
                 <WithingsWorkoutsModule />
+                <HealthTrendModule />
             </div>
 
             {showNewTracker && <NewTrackerModal onClose={() => setShowNewTracker(false)} />}

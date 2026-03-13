@@ -20,6 +20,17 @@ export interface SleepData {
     rem: number;
     awake: number;
     resting_hr: number;
+    hr_min: number;
+    hr_avg: number;
+    hrv: number;
+    respiration_rate: number;
+}
+
+export interface VitalData {
+    date: string;
+    temp?: number;
+    rhr?: number;
+    vitals_score?: number;
 }
 
 export interface WithingsWorkout {
@@ -39,6 +50,9 @@ interface WithingsState {
     sleepData: SleepData | null;
     weeklySleepData: SleepData[];
     workouts: WithingsWorkout[];
+    vitals: VitalData | null;
+    weeklyVitals: VitalData[];
+    fetchVitalData: () => Promise<void>;
     connect: () => void;
     exchangeCode: (code: string) => Promise<void>;
     fetchSleepData: () => Promise<void>;
@@ -103,6 +117,8 @@ export const useWithingsStore = create<WithingsState>((set) => {
         sleepData: null,
         weeklySleepData: [],
         workouts: [],
+        vitals: null,
+        weeklyVitals: [],
 
         connect: () => {
             const scope = encodeURIComponent('user.info,user.metrics,user.activity,user.heart,user.sleepevents');
@@ -207,6 +223,10 @@ export const useWithingsStore = create<WithingsState>((set) => {
                             rem: dataFields.remsleepduration || 0,
                             awake: dataFields.wakeupduration || 0,
                             resting_hr: dataFields.hr_average || dataFields.hr_min || 0,
+                            hr_min: dataFields.hr_min || 0,
+                            hr_avg: dataFields.hr_average || 0,
+                            hrv: dataFields.rmssd || dataFields.sdnn_1 || 0,
+                            respiration_rate: dataFields.respiration_rate_average || 0,
                         };
                     });
 
@@ -269,6 +289,61 @@ export const useWithingsStore = create<WithingsState>((set) => {
                 }
             } catch (err) {
                 console.error("Failed to fetch workout data", err);
+            } finally {
+                set({ loading: false });
+            }
+        },
+
+        fetchVitalData: async () => {
+            let tokens = await getTokens();
+            if (!tokens) return;
+
+            set({ loading: true });
+            try {
+                if (Date.now() > tokens.expires_at - 300000) {
+                    const newAccess = await refreshTokens(tokens.refresh_token);
+                    tokens.access_token = newAccess;
+                }
+
+                // Types: 11 (HR), 71 (Temp), 130+ (Vitals)
+                const vitalParams = new URLSearchParams({
+                    action: 'getmeas',
+                    meastypes: '11,71',
+                    category: '1', // real measures
+                    startdate: Math.floor(subDays(new Date(), 14).getTime() / 1000).toString(),
+                    enddate: Math.floor(new Date().getTime() / 1000).toString(),
+                });
+
+                const res = await fetch(`/api/withings/v2/measure?${vitalParams.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+                });
+
+                const data = await res.json();
+                console.log("Withings Vitals raw response:", data);
+
+                if (data.status === 0 && data.body.measuregrps) {
+                    const groups = data.body.measuregrps;
+                    const dailyVitals: Record<string, VitalData> = {};
+
+                    groups.forEach((group: any) => {
+                        const date = format(new Date(group.date * 1000), 'yyyy-MM-dd');
+                        if (!dailyVitals[date]) dailyVitals[date] = { date };
+
+                        group.measures.forEach((m: any) => {
+                            const value = m.value * Math.pow(10, m.unit);
+                            if (m.type === 71) dailyVitals[date].temp = value;
+                            if (m.type === 11) dailyVitals[date].rhr = value;
+                        });
+                    });
+
+                    const sortedVitals = Object.values(dailyVitals).sort((a, b) => a.date.localeCompare(b.date));
+                    set({ 
+                        vitals: sortedVitals[sortedVitals.length - 1] || null,
+                        weeklyVitals: sortedVitals 
+                    });
+                }
+            } catch (err) {
+                console.error("Failed to fetch vitals data", err);
             } finally {
                 set({ loading: false });
             }

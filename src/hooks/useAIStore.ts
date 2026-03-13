@@ -102,7 +102,19 @@ export const useAIStore = create<AIState>()(
                 }
 
                 if (weeklySleep.length > 0) {
-                    dataContext += `[WEEKLY SLEEP TRENDS]\n${weeklySleep.map(s => `- ${s.date}: Score ${s.score}, ${Math.floor(s.duration / 3600)}h duration`).join('\n')}\n`;
+                    dataContext += `[WEEKLY SLEEP & RECOVERY TRENDS]\n${weeklySleep.map(s => `- ${s.date}: Score ${s.score}, ${Math.floor(s.duration / 3600)}h duration, HRV: ${s.hrv}ms, Resp: ${s.respiration_rate}rpm`).join('\n')}\n`;
+                }
+
+                const vitalsData = withingsStore.vitals;
+                const weeklyVitals = withingsStore.weeklyVitals;
+                if (vitalsData || weeklyVitals.length > 0) {
+                    dataContext += `\n[VITALS & TEMPERATURE TRENDS]\n`;
+                    if (vitalsData) {
+                        dataContext += `Current: Temp ${vitalsData.temp?.toFixed(1)}°C, RHR ${vitalsData.rhr} bpm.\n`;
+                    }
+                    if (weeklyVitals.length > 0) {
+                        dataContext += `Weekly Trends:\n${weeklyVitals.map(v => `- ${v.date}: ${v.temp?.toFixed(1) || 'N/A'}°C, ${v.rhr || 'N/A'} bpm`).join('\n')}\n`;
+                    }
                 }
 
                 if (gymLogs.length > 0) {
