@@ -4,7 +4,7 @@ import { useWithingsStore } from '../../hooks/useWithingsStore';
 import { useUI } from '../../context/UIContext';
 
 export const SleepModule: React.FC = () => {
-    const { isConnected, loading, hasChecked, sleepData, weeklySleepData, connect, disconnect, fetchSleepData, checkConnection } = useWithingsStore();
+    const { isConnected, loading, hasChecked, sleepData, weeklySleepData, connect, disconnect, fetchSleepData, fetchWorkoutData, checkConnection } = useWithingsStore();
     const { showConfirm } = useUI();
     const [showReadinessModal, setShowReadinessModal] = useState(false);
 
@@ -14,6 +14,7 @@ export const SleepModule: React.FC = () => {
                 const state = useWithingsStore.getState();
                 if (state.isConnected) {
                     state.fetchSleepData();
+                    state.fetchWorkoutData();
                 }
             });
         }
@@ -133,6 +134,7 @@ export const SleepModule: React.FC = () => {
                                     console.log("--- START WITHINGS TEST ---");
                                     try {
                                         await state.fetchSleepData();
+                                        await state.fetchWorkoutData();
                                         console.log("Fetch Complete. Check logs above.");
                                     } catch (e) {
                                         console.error("Test Error:", e);
@@ -141,7 +143,7 @@ export const SleepModule: React.FC = () => {
                                 }} className="p-2 text-zinc-400 hover:text-amber-400 bg-zinc-900 border border-zinc-800 rounded-lg transition-colors" title="Debug API">
                                     <Activity className="w-4 h-4" />
                                 </button>
-                                <button onClick={fetchSleepData} disabled={loading} className="p-2 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-lg transition-colors disabled:opacity-50" title="Refresh Data">
+                                <button onClick={() => { fetchSleepData(); fetchWorkoutData(); }} disabled={loading} className="p-2 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-lg transition-colors disabled:opacity-50" title="Refresh Data">
                                     <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
                                 </button>
                                 <button onClick={handleDisconnect} className="p-2 text-zinc-400 hover:text-red-400 bg-zinc-900 border border-zinc-800 rounded-lg transition-colors" title="Disconnect Account">

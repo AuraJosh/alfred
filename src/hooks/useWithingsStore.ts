@@ -22,15 +22,27 @@ export interface SleepData {
     resting_hr: number;
 }
 
+export interface WithingsWorkout {
+    id: number;
+    category: number;
+    duration: number; // seconds
+    calories: number;
+    distance?: number;
+    date: string;
+    timestamp: string;
+}
+
 interface WithingsState {
     isConnected: boolean;
     loading: boolean;
     hasChecked: boolean;
     sleepData: SleepData | null;
     weeklySleepData: SleepData[];
+    workouts: WithingsWorkout[];
     connect: () => void;
     exchangeCode: (code: string) => Promise<void>;
     fetchSleepData: () => Promise<void>;
+    fetchWorkoutData: () => Promise<void>;
     checkConnection: () => Promise<void>;
     disconnect: () => Promise<void>;
 }
@@ -90,6 +102,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
         hasChecked: false,
         sleepData: null,
         weeklySleepData: [],
+        workouts: [],
 
         connect: () => {
             const scope = encodeURIComponent('user.info,user.metrics,user.activity,user.heart,user.sleepevents');
@@ -210,6 +223,52 @@ export const useWithingsStore = create<WithingsState>((set) => {
                 }
             } catch (err) {
                 console.error("Failed to fetch sleep data", err);
+            } finally {
+                set({ loading: false });
+            }
+        },
+
+        fetchWorkoutData: async () => {
+            let tokens = await getTokens();
+            if (!tokens) return;
+
+            set({ loading: true });
+            try {
+                // Refresh token if expired
+                if (Date.now() > tokens.expires_at - 300000) {
+                    const newAccess = await refreshTokens(tokens.refresh_token);
+                    tokens.access_token = newAccess;
+                }
+
+                const workoutParams = new URLSearchParams({
+                    action: 'getworkouts',
+                    startdateymd: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+                    enddateymd: format(new Date(), 'yyyy-MM-dd'),
+                });
+
+                const res = await fetch(`/api/withings/v2/measure?${workoutParams.toString()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${tokens.access_token}`
+                    }
+                });
+
+                const data = await res.json();
+                console.log("Withings Workout raw response:", data);
+                if (data.status === 0 && data.body.series) {
+                    const workouts = data.body.series.map((item: any) => ({
+                        id: item.id,
+                        category: item.category,
+                        duration: (item.enddate - item.startdate) || 0,
+                        calories: item.data?.calories || 0,
+                        distance: item.data?.distance || 0,
+                        date: item.date,
+                        timestamp: new Date(item.startdate * 1000).toISOString()
+                    }));
+
+                    set({ workouts: workouts.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()) });
+                }
+            } catch (err) {
+                console.error("Failed to fetch workout data", err);
             } finally {
                 set({ loading: false });
             }

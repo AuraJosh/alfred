@@ -15,6 +15,7 @@ import { StudyModule } from '../components/modules/StudyModule';
 import { SleepModule } from '../components/modules/SleepModule';
 import { IntelligenceModule } from '../components/modules/IntelligenceModule';
 import { ShoppingListModule } from '../components/modules/ShoppingListModule';
+import { WithingsWorkoutsModule } from '../components/modules/WithingsWorkoutsModule';
 import { ChatWidget } from '../components/modules/ChatWidget';
 
 export const Dashboard: React.FC = () => {
@@ -230,6 +231,7 @@ export const Dashboard: React.FC = () => {
             <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed mb-10">
                 <h2 className="text-xl font-bold text-zinc-300">Sleep & Recovery</h2>
                 <SleepModule />
+                <WithingsWorkoutsModule />
             </div>
 
             <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed mb-10">
