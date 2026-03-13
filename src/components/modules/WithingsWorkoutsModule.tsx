@@ -10,7 +10,7 @@ const WORKOUT_NAMES: Record<number, string> = {
     4: "Cycling",
     5: "Swimming",
     6: "Boxing",
-    7: "Climbing",
+    7: "Swimming",
     8: "Rowing",
     9: "Elliptical",
     10: "Strength Training",
@@ -24,7 +24,6 @@ const WORKOUT_NAMES: Record<number, string> = {
     18: "Squash",
     19: "Badminton",
     20: "Soccer",
-    21: "Basketball",
     22: "Jumping Rope",
     23: "Golf",
     34: "Bodyweight",
@@ -38,6 +37,7 @@ const WORKOUT_NAMES: Record<number, string> = {
     272: "Walking",
     274: "Pilates",
     305: "Yoga",
+    559: "Dog Walking",
 };
 
 export const WithingsWorkoutsModule: React.FC = () => {
