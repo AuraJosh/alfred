@@ -13,17 +13,29 @@ const WORKOUT_NAMES: Record<number, string> = {
     7: "Climbing",
     8: "Rowing",
     9: "Elliptical",
+    10: "Strength Training",
+    11: "Cardio",
     12: "Zumba",
-    15: "Tennis",
-    16: "Badminton",
+    13: "Yoga",
+    14: "Pilates",
+    15: "Basketball",
+    16: "Weights / Strength Training",
+    17: "Tennis",
+    18: "Squash",
+    19: "Badminton",
+    20: "Soccer",
     21: "Basketball",
-    24: "Soccer",
+    22: "Jumping Rope",
+    23: "Golf",
     34: "Bodyweight",
-    90: "General",
+    90: "General Workout",
+    120: "Dog Walking",
+    131: "Walking",
     187: "Dog Walking",
     188: "Gardening",
     191: "Strength Training",
     192: "Functional Training",
+    272: "Walking",
     274: "Pilates",
     305: "Yoga",
 };
@@ -45,7 +57,7 @@ export const WithingsWorkoutsModule: React.FC = () => {
         <div key={workout.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 hover:border-indigo-500/30 transition-all group">
             <div className="flex justify-between items-start mb-3">
                 <div>
-                    <h3 className="font-bold text-zinc-100">{WORKOUT_NAMES[workout.category] || 'Workout'}</h3>
+                    <h3 className="font-bold text-zinc-100">{WORKOUT_NAMES[workout.category] || `Activity (${workout.category})`}</h3>
                     <p className="text-[10px] text-zinc-500 font-mono uppercase tracking-tighter">
                         {format(parseISO(workout.timestamp), 'MMM do, HH:mm')}
                     </p>
