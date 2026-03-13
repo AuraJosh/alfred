@@ -14,6 +14,7 @@ import { SocialModule } from '../components/modules/SocialModule';
 import { StudyModule } from '../components/modules/StudyModule';
 import { SleepModule } from '../components/modules/SleepModule';
 import { IntelligenceModule } from '../components/modules/IntelligenceModule';
+import { ShoppingListModule } from '../components/modules/ShoppingListModule';
 import { ChatWidget } from '../components/modules/ChatWidget';
 
 export const Dashboard: React.FC = () => {
@@ -200,8 +201,10 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed">
-                <h2 className="text-xl font-bold text-zinc-300">Daily To-Do Execution</h2>
-                <TodoModule />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <TodoModule />
+                    <ShoppingListModule />
+                </div>
             </div>
 
             <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed">

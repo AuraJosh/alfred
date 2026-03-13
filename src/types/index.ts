@@ -29,7 +29,7 @@ export interface Todo {
     id: string;
     content: string;
     status: 'todo' | 'in_progress' | 'done';
-    type: 'mundane' | 'project' | 'work';
+    type: 'mundane' | 'project' | 'work' | 'shopping';
     parentId?: string;
     userId: string;
     dueDate?: string;

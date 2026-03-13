@@ -73,51 +73,47 @@ export const TodoModule: React.FC = () => {
     );
 
     return (
-        <div className="max-w-2xl mt-8">
-            {/* 
-        Routine / Mundane
-        These are small tasks that might reset daily. We keep the UI very compact here.
-      */}
-            <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5">
-                <div className="flex items-center gap-2 mb-4">
-                    <ListTodo className="w-5 h-5 text-amber-400" />
-                    <h2 className="text-lg font-bold text-zinc-100">Daily Execution Log</h2>
-                </div>
+        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 flex flex-col h-[400px]">
+            <div className="flex items-center gap-2 mb-4 shrink-0">
+                <ListTodo className="w-5 h-5 text-amber-400" />
+                <h2 className="text-lg font-bold text-zinc-100">Daily Execution Log</h2>
+            </div>
 
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 mb-4">
                 <div className="mb-4">
                     {routines.map(todo => <TodoItem key={todo.id} todo={todo} />)}
                     {routines.length === 0 && <p className="text-sm text-zinc-500 italic">No chores right now.</p>}
                 </div>
 
-                <form onSubmit={handleAddRoutine} className="flex gap-2 mb-2">
-                    <input
-                        type="text"
-                        value={newRoutine}
-                        onChange={(e) => setNewRoutine(e.target.value)}
-                        placeholder="Add routine task..."
-                        className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 transition-colors"
-                    />
-                    <button type="submit" disabled={!newRoutine} className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 px-3 rounded-lg text-white font-medium transition-colors">
-                        <Plus className="w-4 h-4" />
-                    </button>
-                </form>
-
                 {completedRoutines.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-zinc-800/50">
                         <button
                             onClick={() => setShowCompletedRoutines(!showCompletedRoutines)}
-                            className="text-xs font-semibold text-zinc-500 hover:text-amber-400 transition-colors w-full text-left"
+                            className="text-xs font-semibold text-zinc-500 hover:text-amber-400 transition-colors w-full text-left mb-2"
                         >
                             {showCompletedRoutines ? "Hide Completed" : `Show Completed (${completedRoutines.length})`}
                         </button>
                         {showCompletedRoutines && (
-                            <div className="mt-3 opacity-70">
+                            <div className="opacity-70">
                                 {completedRoutines.map(todo => <TodoItem key={todo.id} todo={todo} />)}
                             </div>
                         )}
                     </div>
                 )}
             </div>
+
+            <form onSubmit={handleAddRoutine} className="flex gap-2 shrink-0">
+                <input
+                    type="text"
+                    value={newRoutine}
+                    onChange={(e) => setNewRoutine(e.target.value)}
+                    placeholder="Add routine task..."
+                    className="flex-1 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-amber-500 transition-colors"
+                />
+                <button type="submit" disabled={!newRoutine} className="bg-amber-600 hover:bg-amber-700 disabled:opacity-50 px-3 rounded-lg text-white font-medium transition-colors">
+                    <Plus className="w-4 h-4" />
+                </button>
+            </form>
         </div>
     );
 };

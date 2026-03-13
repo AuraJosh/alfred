@@ -149,7 +149,7 @@ export const StudyChecklist: React.FC<StudyChecklistProps> = ({ subject }) => {
         return (
             <>
                 {/* Normal Widget stays in background maintaining layout */}
-                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 flex flex-col h-full min-h-[400px]">
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 flex flex-col h-[450px]">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <FolderDot className="w-5 h-5 text-indigo-400" />
@@ -180,7 +180,7 @@ export const StudyChecklist: React.FC<StudyChecklistProps> = ({ subject }) => {
     }
 
     return (
-        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 flex flex-col h-full min-h-[400px]">
+        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 flex flex-col h-[450px]">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <FolderDot className="w-5 h-5 text-indigo-400" />

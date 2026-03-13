@@ -182,7 +182,7 @@ export const StudyModule: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
             <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Deep Work Widget */}
-                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 flex flex-col justify-start relative overflow-hidden">
+                <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 flex flex-col justify-start relative overflow-hidden h-[450px]">
                     {/* Active pulse bar */}
                     {phase === 'running' && <div className="absolute top-0 left-0 right-0 h-1 bg-amber-500 animate-pulse timer-pulse-bar" />}
                     {phase === 'paused' && <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 timer-pulse-bar" />}
@@ -226,7 +226,7 @@ export const StudyModule: React.FC = () => {
 
                     {/* ── Event log ── */}
                     {isActive && events.length > 0 && (
-                        <div className="mb-4 space-y-1.5 border border-zinc-800 rounded-lg p-3 bg-zinc-900/50">
+                        <div className="mb-4 space-y-1.5 border border-zinc-800 rounded-lg p-3 bg-zinc-900/50 overflow-y-auto custom-scrollbar max-h-32 shrink-0">
                             {events.map((ev, i) => (
                                 <div key={i} className="flex items-center gap-2.5">
                                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${EVENT_DOT_COLORS[ev.type]}`} />

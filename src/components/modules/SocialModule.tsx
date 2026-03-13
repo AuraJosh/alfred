@@ -42,27 +42,28 @@ export const SocialModule: React.FC = () => {
     return (
         <div className="mt-8 max-w-xl">
             {/* Pub Tracker */}
-            <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                        <Beer className="w-5 h-5 text-amber-500" />
-                        <h2 className="text-lg font-bold text-zinc-100">Pub Log</h2>
-                    </div>
-                    <div className="flex items-center gap-6">
-                        <div className="text-right">
-                            <p className="text-[10px] text-zinc-500 uppercase tracking-widest leading-none">Avg Pint</p>
-                            <p className="text-lg font-bold text-amber-500 leading-none mt-1">£{avgPintPrice}</p>
-                        </div>
-                        <button
-                            onClick={() => setShowPubListModal(true)}
-                            className="px-3 py-1.5 text-xs font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 rounded-md transition-colors border border-amber-500/20 flex gap-2 items-center"
-                        >
-                            <Maximize2 className="w-3 h-3" />
-                            View Pubs
-                        </button>
-                    </div>
+        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 h-[400px] flex flex-col">
+            <div className="flex items-center justify-between mb-6 shrink-0">
+                <div className="flex items-center gap-2">
+                    <Beer className="w-5 h-5 text-amber-500" />
+                    <h2 className="text-lg font-bold text-zinc-100">Pub Log</h2>
                 </div>
+                <div className="flex items-center gap-6">
+                    <div className="text-right">
+                        <p className="text-[10px] text-zinc-500 uppercase tracking-widest leading-none">Avg Pint</p>
+                        <p className="text-lg font-bold text-amber-500 leading-none mt-1">£{avgPintPrice}</p>
+                    </div>
+                    <button
+                        onClick={() => setShowPubListModal(true)}
+                        className="px-3 py-1.5 text-xs font-semibold text-amber-400 bg-amber-400/10 hover:bg-amber-400/20 rounded-md transition-colors border border-amber-500/20 flex gap-2 items-center"
+                    >
+                        <Maximize2 className="w-3 h-3" />
+                        View Pubs
+                    </button>
+                </div>
+            </div>
 
+            <div className="flex-1 overflow-y-auto custom-scrollbar pr-2">
                 <form onSubmit={handleAddPubLog} className="space-y-4">
                     <div className="flex gap-4">
                         <div className="flex-[2]">
@@ -122,6 +123,7 @@ export const SocialModule: React.FC = () => {
                     </button>
                 </form>
             </div>
+        </div>
 
             {showPubListModal && <PubListModal onClose={() => setShowPubListModal(false)} />}
         </div>
