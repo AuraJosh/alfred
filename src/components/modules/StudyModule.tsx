@@ -333,7 +333,10 @@ export const StudyModule: React.FC = () => {
                     </div>
                     <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-2">
                         {sessions.length === 0 && <span className="text-sm text-zinc-600 italic">No sessions logged yet.</span>}
-                        {sessions.slice(-5).reverse().map(session => (
+                        {[...sessions]
+                            .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                            .slice(0, 5)
+                            .map(session => (
                             <div key={session.id} className="bg-zinc-900 border border-zinc-800 rounded-lg p-3 w-full">
                                 <div className="flex items-center justify-between mb-1">
                                     <div className="flex items-center gap-2">

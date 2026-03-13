@@ -28,8 +28,12 @@ export const StudyChecklist: React.FC<StudyChecklistProps> = ({ subject }) => {
 
     const renderContent = (isModal: boolean) => {
         const MAX_INLINE = 5;
-        const activeTasks = subjectTasks.filter(t => !t.isCompleted);
-        const completedTasks = subjectTasks.filter(t => t.isCompleted);
+        const activeTasks = subjectTasks
+            .filter(t => !t.isCompleted)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        const completedTasks = subjectTasks
+            .filter(t => t.isCompleted)
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         const displayTasks = isModal ? activeTasks : activeTasks.slice(0, MAX_INLINE);
         const hasMore = !isModal && (activeTasks.length > MAX_INLINE || completedTasks.length > 0);
