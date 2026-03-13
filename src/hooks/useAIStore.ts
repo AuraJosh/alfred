@@ -142,6 +142,18 @@ export const useAIStore = create<AIState>()(
                     dataContext += `Recently Completed (7 days):\n${recentlyCompleted.map(t => `- [${t.type}] ${t.content} (Done: ${format(new Date(t.completedAt!), 'MMM d')})`).join('\n')}\n`;
                 }
 
+                const workoutStore = useWithingsStore.getState();
+                const withingsWorkouts = workoutStore.workouts.filter(w =>
+                    recentDays.some(date => w.timestamp.startsWith(date))
+                );
+
+                if (withingsWorkouts.length > 0) {
+                    dataContext += `\n[SMARTWATCH WORKOUTS - LAST 7 DAYS]\n${withingsWorkouts.map(w => {
+                        const duration = Math.floor(w.duration / 60);
+                        return `- ${format(new Date(w.timestamp), 'EEEE, MMM d @ h:mm a')}: ${w.category === 559 ? 'Dog Walking' : w.category === 7 ? 'Swimming' : (w as any).category_name || 'Activity'} (${duration} mins, ${w.calories} kcal)${w.distance ? `, Distance: ${(w.distance / 1000).toFixed(2)}km` : ''}`;
+                    }).join('\n')}\n`;
+                }
+
                 if (studyTasks.length > 0 || recentStudySessions.length > 0) {
                     dataContext += `\n[DEEP WORK & STUDY]\n`;
                     if (studyTasks.length > 0) {

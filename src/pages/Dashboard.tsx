@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../hooks/useStore';
-import { LogOut, Plus, Activity, Fingerprint } from 'lucide-react';
+import { LogOut, Plus, Activity, Fingerprint, Sparkles } from 'lucide-react';
 import { NewTrackerModal } from '../components/modules/NewTrackerModal';
 import { TrackerWidget } from '../components/dashboard/TrackerWidget';
 import { TrackerExpandedModal } from '../components/dashboard/TrackerExpandedModal';
@@ -24,6 +24,7 @@ export const Dashboard: React.FC = () => {
     const { addToast, showPrompt, showConfirm } = useUI();
     const [showNewTracker, setShowNewTracker] = React.useState(false);
     const [selectedTrackerId, setSelectedTrackerId] = React.useState<string | null>(null);
+    const [showIntelligence, setShowIntelligence] = React.useState(false);
 
     const standardTrackers = trackers.filter(t => !t.isDaysSince);
     const daysSinceTrackers = trackers.filter(t => t.isDaysSince);
@@ -192,6 +193,25 @@ export const Dashboard: React.FC = () => {
                                 </div>
                             </div>
                         )}
+
+                        <div className="mt-8 pt-4 border-t border-zinc-900 border-dashed">
+                            <div className="flex justify-end mb-4">
+                                <button
+                                    onClick={() => setShowIntelligence(!showIntelligence)}
+                                    className="flex items-center gap-2 px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-sm font-semibold text-zinc-400 hover:text-amber-500 rounded-xl transition-all shadow-lg"
+                                >
+                                    {showIntelligence ? (
+                                        <><Sparkles className="w-4 h-4" /> Hide AI Briefing</>
+                                    ) : (
+                                        <><Sparkles className="w-4 h-4" /> Open AI Briefing</>
+                                    )}
+                                </button>
+                            </div>
+                            
+                            {showIntelligence && (
+                                <IntelligenceModule />
+                            )}
+                        </div>
                     </>
                 )}
             </main>
@@ -232,10 +252,6 @@ export const Dashboard: React.FC = () => {
                 <h2 className="text-xl font-bold text-zinc-300">Sleep & Recovery</h2>
                 <SleepModule />
                 <WithingsWorkoutsModule />
-            </div>
-
-            <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed mb-10">
-                <IntelligenceModule />
             </div>
 
             {showNewTracker && <NewTrackerModal onClose={() => setShowNewTracker(false)} />}
