@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bot, X, Send, Loader2, MessageSquare } from 'lucide-react';
 import { useAIStore } from '../../hooks/useAIStore';
+import { format } from 'date-fns';
 
 interface Message {
     role: 'user' | 'model';
@@ -35,7 +36,8 @@ export const ChatWidget: React.FC = () => {
 
         try {
             const contextData = getAIContext();
-            const systemInstruction = "You are Alfred, a practical, no-nonsense health and productivity coach. You have full context of the user's tracking data (workouts, sleep, tasks, nutrition, etc.). Answer their queries concisely and precisely based on this context. Format responses nicely.\n\nContext:\n" + contextData;
+            const todayStr = format(new Date(), 'EEEE, MMMM do');
+            const systemInstruction = `You are Alfred, a practical, no-nonsense health and productivity coach. Today is ${todayStr}. You have full context of the user's tracking data (workouts, sleep, tasks, nutrition, etc.). Answer their queries concisely and precisely based on this context. Always respect the current date when the user says "today". Format responses nicely.\n\nContext:\n` + contextData;
 
             // Map all existing messages
             const chatHistory = messages.filter(m => m.text !== 'Hello. I am Alfred. I have full context of all your tracking data for the past 7 days. How can I assist you today?').map(m => ({

@@ -74,9 +74,11 @@ export const useAIStore = create<AIState>()(
 
                 const user = useAuth.getState().user;
                 const firstName = user?.displayName?.split(' ')[0] || 'Wayne';
+                const todayFormatted = format(new Date(), 'EEEE, MMMM do, yyyy');
 
                 // Build the Prompt Context
-                let dataContext = `Here is ${firstName}'s logged data for the past 7 days:\n\n`;
+                let dataContext = `IMPORTANT: Today is ${todayFormatted}. Only refer to activities on this specific date as "today".\n\n`;
+                dataContext += `Here is ${firstName}'s logged data for the past 7 days:\n\n`;
 
                 if (trackers.length > 0) {
                     dataContext += `[TRACKERS & METRICS]\n`;
