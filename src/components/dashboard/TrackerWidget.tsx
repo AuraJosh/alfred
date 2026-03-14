@@ -159,7 +159,7 @@ export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQ
                 </div>
 
                 {/* Tiny Sparkline Chart OR custom layout */}
-                <div className="h-12 flex-1 relative min-w-0 min-h-0">
+                <div className="h-12 flex-1 relative">
                     {tracker.visualization === 'none' ? (
                         <div className="w-full h-full flex flex-col justify-center items-end pr-2">
                             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-500/10 border border-orange-500/20 text-orange-400">

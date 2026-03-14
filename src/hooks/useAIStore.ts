@@ -242,8 +242,8 @@ The Insight: [Write a deep, 4-5 sentence paragraph analyzing the connections bet
 CRITICAL INSTRUCTION: You must complete the ENTIRE template. Do not stop after "The Data". You must generate "The Insight" paragraph fully and completely. Never cut off mid-sentence.
 `;
 
-                    // Call Google Gemini API directly using simple REST and v1 endpoint
-                    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                    // Call Google Gemini API directly using simple REST to avoid heavy npm SDK
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(url, {
                         method: 'POST',
@@ -317,7 +317,7 @@ FORMAT: Return a JSON array of strings ONLY. No extra text.
 Example: ["It's been 6 days since you changed your sheets; schedule that for today.", "Shoulders haven't been targeted since Tuesday.", "3 project tasks are still pending from yesterday."]
 `;
 
-                    const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
                     const response = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

@@ -48,10 +48,10 @@ export interface WithingsWorkout {
     timestamp: string;
 }
 
-export interface ActivityData {
+export interface DailyActivity {
     date: string;
-    activeCalories: number;
-    totalCalories: number;
+    calories: number; // Active calories
+    totalCalories: number; // Active + BMR
     steps: number;
 }
 
@@ -65,15 +65,15 @@ interface WithingsState {
     vitals: VitalData | null;
     weeklyVitals: VitalData[];
     intradayHR: IntradayHeartRate[];
-    activity: ActivityData | null;
-    weeklyActivity: ActivityData[];
+    dailyActivity: DailyActivity | null;
+    weeklyActivity: DailyActivity[];
     fetchVitalData: () => Promise<void>;
     fetchIntradayHR: () => Promise<void>;
-    fetchActivityData: () => Promise<void>;
     connect: () => void;
     exchangeCode: (code: string) => Promise<void>;
     fetchSleepData: () => Promise<void>;
     fetchWorkoutData: () => Promise<void>;
+    fetchDailyActivity: () => Promise<void>;
     checkConnection: () => Promise<void>;
     disconnect: () => Promise<void>;
 }
@@ -137,7 +137,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
         vitals: null,
         weeklyVitals: [],
         intradayHR: [],
-        activity: null,
+        dailyActivity: null,
         weeklyActivity: [],
 
         connect: () => {
@@ -412,7 +412,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
             }
         },
 
-        fetchActivityData: async () => {
+        fetchDailyActivity: async () => {
             let tokens = await getTokens();
             if (!tokens) return;
 
@@ -427,7 +427,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
                     action: 'getactivity',
                     startdateymd: format(subDays(new Date(), 7), 'yyyy-MM-dd'),
                     enddateymd: format(new Date(), 'yyyy-MM-dd'),
-                    data_fields: 'calories,totalcalories,steps'
+                    data_fields: 'steps,calories,totalcalories'
                 });
 
                 const res = await fetch(`/api/withings/v2/measure?${activityParams.toString()}`, {
@@ -435,23 +435,21 @@ export const useWithingsStore = create<WithingsState>((set) => {
                 });
 
                 const data = await res.json();
-                console.log("Withings Activity raw response:", data);
-
                 if (data.status === 0 && data.body.activities) {
-                    const activities = data.body.activities.map((item: any) => ({
-                        date: item.date,
-                        activeCalories: item.calories || 0,
-                        totalCalories: item.totalcalories || 0,
-                        steps: item.steps || 0
+                    const activities: DailyActivity[] = data.body.activities.map((a: any) => ({
+                        date: a.date,
+                        calories: a.calories || 0,
+                        totalCalories: a.totalcalories || a.calories || 0,
+                        steps: a.steps || 0
                     }));
 
                     set({ 
-                        activity: activities[activities.length - 1] || null,
+                        dailyActivity: activities[activities.length - 1] || null,
                         weeklyActivity: activities 
                     });
                 }
             } catch (err) {
-                console.error("Failed to fetch activity data", err);
+                console.error("Failed to fetch daily activity:", err);
             } finally {
                 set({ loading: false });
             }

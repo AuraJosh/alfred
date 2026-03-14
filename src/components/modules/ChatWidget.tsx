@@ -55,7 +55,7 @@ ${contextData}`;
                 parts: [{ text: userMsg }]
             });
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -77,9 +77,8 @@ ${contextData}`;
             const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I was unable to formulate a response.";
 
             setMessages(prev => [...prev, { role: 'model', text: reply }]);
-        } catch (err: any) {
-            console.error("Chat Error:", err);
-            setMessages(prev => [...prev, { role: 'model', text: `Error: ${err.message || 'Could not reach the neural framework.'} Ensure your API key is valid.` }]);
+        } catch (err) {
+            setMessages(prev => [...prev, { role: 'model', text: "Error: Could not reach the neural framework. Ensure your API key is valid." }]);
         } finally {
             setLoading(false);
         }

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNutritionStore } from '../../hooks/useNutritionStore';
 import { useWithingsStore } from '../../hooks/useWithingsStore';
 import { useUI } from '../../context/UIContext';
-import { Utensils, Plus, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Activity, Flame } from 'lucide-react';
+import { Utensils, Plus, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import { isToday, parseISO, subDays, addDays, isSameDay, format } from 'date-fns';
 
 export const NutritionModule: React.FC = () => {
@@ -16,19 +16,6 @@ export const NutritionModule: React.FC = () => {
     const [showExpandedForm, setShowExpandedForm] = useState(false);
     const [viewDate, setViewDate] = useState(new Date());
 
-    const { weeklyActivity, fetchActivityData, isConnected } = useWithingsStore();
-
-    React.useEffect(() => {
-        if (isConnected) {
-            fetchActivityData();
-        }
-    }, [isConnected, viewDate]);
-
-    // Find activity for viewDate
-    const dateStr = format(viewDate, 'yyyy-MM-dd');
-    const dayActivity = weeklyActivity.find(a => a.date === dateStr);
-    const burnedCalories = dayActivity?.totalCalories || 0;
-
     const handlePrev = () => setViewDate(prev => subDays(prev, 1));
     const handleNext = () => setViewDate(prev => addDays(prev, 1));
 
@@ -38,6 +25,15 @@ export const NutritionModule: React.FC = () => {
         .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     const viewDateCalories = viewDateEntries.reduce((sum, current) => sum + current.calories, 0);
+
+    // Get Withings Activity for Energy Balance
+    const { weeklyActivity, isConnected } = useWithingsStore();
+    const dateStr = format(viewDate, 'yyyy-MM-dd');
+    const dayActivity = weeklyActivity.find(a => a.date === dateStr);
+    
+    const totalBurned = dayActivity?.totalCalories || 0;
+    const netBalance = viewDateCalories - totalBurned;
+    const hasData = totalBurned > 0;
 
     const handleAddEntry = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -68,41 +64,31 @@ export const NutritionModule: React.FC = () => {
                         <h2 className="text-lg font-bold text-zinc-100">Calorie Tracker</h2>
                     </div>
 
-                    <div className="border-b border-zinc-800 mb-6 flex flex-col items-center">
-                        <div className="flex flex-col items-center py-4">
-                            <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] mb-1 font-bold">Total Intake</p>
-                            <div className="text-4xl font-black text-white">{viewDateCalories} <span className="text-xs text-zinc-500 font-medium">kcal</span></div>
-                        </div>
-
-                        {isConnected && (
-                            <div className="w-full grid grid-cols-2 gap-4 pb-6 pt-2">
-                                <div className="text-center group">
-                                    <div className="flex items-center justify-center gap-1.5 mb-1.5">
-                                        <Flame className="w-3 h-3 text-orange-500" />
-                                        <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">Burned</p>
+                    <div className="text-center py-6 border-b border-zinc-800 mb-6 flex flex-col items-center">
+                        <p className="text-sm text-zinc-500 uppercase tracking-widest mb-1">{isToday(viewDate) ? "Today's Total" : "Total Intake"}</p>
+                        <div className="text-5xl font-black text-white">{viewDateCalories} <span className="text-xl text-zinc-500 font-medium">kcal</span></div>
+                        
+                        {isConnected && hasData && (
+                            <div className="mt-4 w-full px-4 animate-in fade-in zoom-in duration-500">
+                                <div className="flex flex-col gap-2 p-3 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+                                    <div className="flex items-center justify-between text-[10px] uppercase tracking-widest font-bold text-zinc-500">
+                                        <span>Total Burned (BMR + Active)</span>
+                                        <span className="text-zinc-300">{totalBurned} kcal</span>
                                     </div>
-                                    <div className="text-lg font-bold text-zinc-300 group-hover:text-white transition-colors">
-                                        {burnedCalories ? `${burnedCalories}` : '--'} <span className="text-[10px] text-zinc-500 font-medium">kcal</span>
+                                    <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden flex">
+                                        <div 
+                                            className="h-full bg-orange-500" 
+                                            style={{ width: `${Math.min(100, (viewDateCalories / totalBurned) * 100)}%` }} 
+                                        />
                                     </div>
-                                </div>
-                                <div className="text-center group border-l border-zinc-800/50">
-                                    <div className="flex items-center justify-center gap-1.5 mb-1.5">
-                                        <Activity className="w-3 h-3 text-blue-400" />
-                                        <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">Net Balance</p>
-                                    </div>
-                                    <div className={`text-lg font-bold transition-all ${
-                                        viewDateCalories - burnedCalories > 0 
-                                            ? 'text-red-400' 
-                                            : viewDateCalories - burnedCalories < 0 
-                                                ? 'text-emerald-400' 
-                                                : 'text-zinc-500'
-                                    }`}>
-                                        {burnedCalories ? (
-                                            <>
-                                                {viewDateCalories - burnedCalories > 0 ? '+' : ''}{viewDateCalories - burnedCalories} 
-                                                <span className="text-[10px] opacity-70 font-medium ml-0.5">kcal</span>
-                                            </>
-                                        ) : '--'}
+                                    <div className="flex items-center justify-between mt-1">
+                                        <div className="flex items-center gap-1.5">
+                                            <Zap className={`w-3.5 h-3.5 ${netBalance <= 0 ? 'text-green-500' : 'text-red-500'}`} />
+                                            <span className="text-xs font-bold text-zinc-300">Net Energy</span>
+                                        </div>
+                                        <div className={`text-sm font-black ${netBalance <= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                            {netBalance <= 0 ? '' : '+'}{netBalance} <span className="text-[10px] font-bold opacity-70">kcal</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
