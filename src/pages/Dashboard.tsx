@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../hooks/useStore';
-import { LogOut, Plus, Activity, Fingerprint, Sparkles } from 'lucide-react';
+import { LogOut, Plus, Activity, Fingerprint, Sparkles, Menu, X as CloseIcon } from 'lucide-react';
 import { NewTrackerModal } from '../components/modules/NewTrackerModal';
 import { TrackerWidget } from '../components/dashboard/TrackerWidget';
 import { TrackerExpandedModal } from '../components/dashboard/TrackerExpandedModal';
@@ -27,6 +27,35 @@ export const Dashboard: React.FC = () => {
     const [showNewTracker, setShowNewTracker] = React.useState(false);
     const [selectedTrackerId, setSelectedTrackerId] = React.useState<string | null>(null);
     const [showIntelligence, setShowIntelligence] = React.useState(false);
+    const [showNav, setShowNav] = React.useState(false);
+
+    const sections = [
+        { id: 'trackers', name: 'Primary Trackers' },
+        { id: 'days-since', name: 'Days Since Trackers' },
+        { id: 'ai-briefing', name: 'Daily Intelligence' },
+        { id: 'scratchpad', name: 'Journal & Notes' },
+        { id: 'todo-lists', name: 'Execution Metrics' },
+        { id: 'nutrition', name: 'Nutrition' },
+        { id: 'gym', name: 'Fitness & Gym' },
+        { id: 'social', name: 'Social Activity' },
+        { id: 'study', name: 'Deep Work' },
+        { id: 'sleep-data', name: 'Sleep & Bio-Telemetry' },
+    ];
+
+    const scrollToSection = (id: string) => {
+        const element = document.getElementById(id);
+        if (element) {
+            const offset = 80;
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: 'smooth'
+            });
+            setShowNav(false);
+        }
+    };
 
     const standardTrackers = trackers.filter(t => !t.isDaysSince);
     const daysSinceTrackers = trackers.filter(t => t.isDaysSince);
@@ -79,9 +108,44 @@ export const Dashboard: React.FC = () => {
     return (
         <div className="min-h-screen bg-zinc-950 text-slate-50 p-6 md:p-10">
             <header className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight mb-1 text-zinc-100">Alfred</h1>
-                    <p className="text-sm text-zinc-400">Welcome back, Master {user?.displayName?.split(' ')[0] || 'Wayne'}.</p>
+                <div className="flex items-center gap-4">
+                    <div className="relative">
+                        <button 
+                            onClick={() => setShowNav(!showNav)}
+                            className="p-2 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-lg transition-colors"
+                            title="Navigate Sections"
+                        >
+                            <Menu className="w-6 h-6" />
+                        </button>
+                        
+                        {showNav && (
+                            <>
+                                <div className="fixed inset-0 z-[100]" onClick={() => setShowNav(false)} />
+                                <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl py-2 z-[101] animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="px-4 py-2 border-b border-zinc-800 flex items-center justify-between mb-1">
+                                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Dashboard Navigation</span>
+                                        <button onClick={() => setShowNav(false)} className="text-zinc-600 hover:text-white">
+                                            <CloseIcon className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                    {sections.map(s => (
+                                        <button
+                                            key={s.id}
+                                            onClick={() => scrollToSection(s.id)}
+                                            className="w-full text-left px-4 py-2.5 text-sm font-medium text-zinc-300 hover:text-amber-400 hover:bg-zinc-800 transition-colors flex items-center justify-between group"
+                                        >
+                                            {s.name}
+                                            <span className="text-[10px] text-zinc-600 group-hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity">Jump</span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+                    </div>
+                    <div>
+                        <h1 className="text-3xl font-bold tracking-tight mb-1 text-zinc-100">Alfred</h1>
+                        <p className="text-sm text-zinc-400">Welcome back, Master {user?.displayName?.split(' ')[0] || 'Wayne'}.</p>
+                    </div>
                 </div>
                 <div className="flex gap-2 sm:gap-3">
                     {!isBiometricEnabled && (
@@ -134,7 +198,7 @@ export const Dashboard: React.FC = () => {
                 ) : (
                     <>
                         {standardTrackers.length > 0 && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <div id="trackers" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 scroll-mt-20">
                                 {/* Active Trackers Grid */}
                                 {standardTrackers.map((tracker) => {
                                     // Filter logs belonging specifically to this tracker
@@ -165,7 +229,7 @@ export const Dashboard: React.FC = () => {
                         )}
 
                         {daysSinceTrackers.length > 0 && (
-                            <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed">
+                            <div id="days-since" className="mt-12 pt-8 border-t border-zinc-900 border-dashed scroll-mt-20">
                                 <h2 className="text-xl font-bold text-zinc-300 mb-6">Days Since...</h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                                     {daysSinceTrackers.map((tracker) => {
@@ -196,7 +260,7 @@ export const Dashboard: React.FC = () => {
                             </div>
                         )}
 
-                        <div className="mt-8 pt-4 border-t border-zinc-900 border-dashed">
+                        <div id="ai-briefing" className="mt-8 pt-4 border-t border-zinc-900 border-dashed scroll-mt-20">
                             <div className="flex justify-end mb-4">
                                 <button
                                     onClick={() => setShowIntelligence(!showIntelligence)}
@@ -219,38 +283,38 @@ export const Dashboard: React.FC = () => {
             </main>
 
             {/* Specialized Modules Section */}
-            <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed">
+            <div id="scratchpad" className="mt-12 pt-8 border-t border-zinc-900 border-dashed scroll-mt-20">
                 <ScratchpadModule />
             </div>
 
-            <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed">
+            <div id="todo-lists" className="mt-12 pt-8 border-t border-zinc-900 border-dashed scroll-mt-20">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <TodoModule />
                     <ShoppingListModule />
                 </div>
             </div>
 
-            <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed">
+            <div id="nutrition" className="mt-12 pt-8 border-t border-zinc-900 border-dashed scroll-mt-20">
                 <h2 className="text-xl font-bold text-zinc-300">Nutrition Tracker</h2>
                 <NutritionModule />
             </div>
 
-            <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed">
+            <div id="gym" className="mt-12 pt-8 border-t border-zinc-900 border-dashed scroll-mt-20">
                 <h2 className="text-xl font-bold text-zinc-300">Physical Mastery</h2>
                 <GymModule />
             </div>
 
-            <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed">
+            <div id="social" className="mt-12 pt-8 border-t border-zinc-900 border-dashed scroll-mt-20">
                 <h2 className="text-xl font-bold text-zinc-300">Pub Tracker</h2>
                 <SocialModule />
             </div>
 
-            <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed">
+            <div id="study" className="mt-12 pt-8 border-t border-zinc-900 border-dashed scroll-mt-20">
                 <h2 className="text-xl font-bold text-zinc-300">Deep Work & Study v2</h2>
                 <StudyModule />
             </div>
 
-            <div className="mt-12 pt-8 border-t border-zinc-900 border-dashed mb-10">
+            <div id="sleep-data" className="mt-12 pt-8 border-t border-zinc-900 border-dashed mb-10 scroll-mt-20">
                 <h2 className="text-xl font-bold text-zinc-300">Sleep & Recovery</h2>
                 <SleepModule />
                 <WithingsWorkoutsModule />
