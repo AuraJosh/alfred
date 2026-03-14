@@ -77,8 +77,9 @@ ${contextData}`;
             const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "I was unable to formulate a response.";
 
             setMessages(prev => [...prev, { role: 'model', text: reply }]);
-        } catch (err) {
-            setMessages(prev => [...prev, { role: 'model', text: "Error: Could not reach the neural framework. Ensure your API key is valid." }]);
+        } catch (err: any) {
+            console.error("Chat Error:", err);
+            setMessages(prev => [...prev, { role: 'model', text: `Error: ${err.message || 'Could not reach the neural framework.'} Ensure your API key is valid.` }]);
         } finally {
             setLoading(false);
         }

@@ -55,14 +55,6 @@ export interface ActivityData {
     steps: number;
 }
 
-export interface UserProfile {
-    firstName?: string;
-    lastName?: string;
-    age?: number;
-    height?: number; // in meters
-    weight?: number; // in kg
-}
-
 interface WithingsState {
     isConnected: boolean;
     loading: boolean;
@@ -75,11 +67,9 @@ interface WithingsState {
     intradayHR: IntradayHeartRate[];
     activity: ActivityData | null;
     weeklyActivity: ActivityData[];
-    userProfile: UserProfile | null;
     fetchVitalData: () => Promise<void>;
     fetchIntradayHR: () => Promise<void>;
     fetchActivityData: () => Promise<void>;
-    fetchProfileData: () => Promise<void>;
     connect: () => void;
     exchangeCode: (code: string) => Promise<void>;
     fetchSleepData: () => Promise<void>;
@@ -149,7 +139,6 @@ export const useWithingsStore = create<WithingsState>((set) => {
         intradayHR: [],
         activity: null,
         weeklyActivity: [],
-        userProfile: null,
 
         connect: () => {
             const scope = encodeURIComponent('user.info,user.metrics,user.activity,user.heart,user.sleepevents');
@@ -463,89 +452,6 @@ export const useWithingsStore = create<WithingsState>((set) => {
                 }
             } catch (err) {
                 console.error("Failed to fetch activity data", err);
-            } finally {
-                set({ loading: false });
-            }
-        },
-
-        fetchProfileData: async () => {
-            let tokens = await getTokens();
-            if (!tokens) return;
-
-            set({ loading: true });
-            try {
-                if (Date.now() > tokens.expires_at - 300000) {
-                    const newAccess = await refreshTokens(tokens.refresh_token);
-                    tokens.access_token = newAccess;
-                }
-
-                // 1. Get User Info (Age)
-                const userParams = new URLSearchParams({ action: 'getuser' });
-                const userRes = await fetch(`/api/withings/v2/user?${userParams.toString()}`, {
-                    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
-                });
-                const userData = await userRes.json();
-                
-                let age: number | undefined;
-                let firstName: string | undefined;
-                let lastName: string | undefined;
-
-                if (userData.status === 0 && userData.body) {
-                    firstName = userData.body.firstname;
-                    lastName = userData.body.lastname;
-                    if (userData.body.birthdate) {
-                        const birth = new Date(userData.body.birthdate * 1000);
-                        const today = new Date();
-                        age = today.getFullYear() - birth.getFullYear();
-                        const m = today.getMonth() - birth.getMonth();
-                        if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-                            age--;
-                        }
-                    }
-                }
-
-                // 2. Get Latest Measures (Weight & Height)
-                // Type 1: Weight, Type 4: Height
-                const measureParams = new URLSearchParams({
-                    action: 'getmeas',
-                    meastypes: '1,4',
-                    category: '1',
-                    lastupdate: '0' // Get latest
-                });
-
-                const measRes = await fetch(`/api/withings/v2/measure?${measureParams.toString()}`, {
-                    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
-                });
-                const measData = await measRes.json();
-
-                let weight: number | undefined;
-                let height: number | undefined;
-
-                if (measData.status === 0 && measData.body.measuregrps) {
-                    const latestGrps = measData.body.measuregrps.sort((a: any, b: any) => b.date - a.date);
-                    
-                    // Iterate and find latest of each
-                    latestGrps.forEach((grp: any) => {
-                        grp.measures.forEach((m: any) => {
-                            const val = m.value * Math.pow(10, m.unit);
-                            if (m.type === 1 && weight === undefined) weight = val;
-                            if (m.type === 4 && height === undefined) height = val;
-                        });
-                    });
-                }
-
-                set({
-                    userProfile: {
-                        firstName,
-                        lastName,
-                        age,
-                        weight,
-                        height
-                    }
-                });
-
-            } catch (err) {
-                console.error("Failed to fetch profile data", err);
             } finally {
                 set({ loading: false });
             }

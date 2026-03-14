@@ -79,15 +79,13 @@ export const useAIStore = create<AIState>()(
                 );
 
                 const user = useAuth.getState().user;
-                const profile = withingsStore.userProfile;
-                const firstName = profile?.firstName || user?.displayName?.split(' ')[0] || 'Wayne';
+                const firstName = user?.displayName?.split(' ')[0] || 'Wayne';
 
                 const now = new Date();
                 const todayStr = format(now, 'EEEE, yyyy-MM-dd HH:mm');
 
                 // Build the Prompt Context
                 let dataContext = `Current Date and Time: ${todayStr}\n`;
-                dataContext += `User Profile: ${firstName}${profile?.age ? `, Age: ${profile.age}` : ''}${profile?.height ? `, Height: ${profile.height.toFixed(2)}m` : ''}${profile?.weight ? `, Weight: ${profile.weight.toFixed(1)}kg` : ''}\n\n`;
                 dataContext += `Here is ${firstName}'s logged data for the past 7 days (including today):\n\n`;
 
                 if (trackers.length > 0) {
@@ -226,12 +224,12 @@ export const useAIStore = create<AIState>()(
 
                     const prompt = `
 You are Alfred, a practical, no-nonsense health and productivity coach for Master ${firstName}.
-Below is the raw data from his "Alfred" dashboard over the past 7 days, including his physical profile.
+Below is the raw data from his "Alfred" dashboard over the past 7 days.
 
 ${dataContext}
 
 Your Objective:
-Write a comprehensive, highly personalized briefing providing actual, actionable insights based on his data. Use his age, weight, and height to provide more accurate health and caloric advice where relevant.
+Write a comprehensive, highly personalized briefing providing actual, actionable insights based on his data.
 
 CRITICAL INSTRUCTION: You MUST format your entire response EXACTLY like this, including the line breaks. Do not deviate from this template or add extra conversational filler:
 
@@ -299,10 +297,8 @@ CRITICAL INSTRUCTION: You must complete the ENTIRE template. Do not stop after "
 
                 try {
                     const today = format(new Date(), 'yyyy-MM-dd');
-                    const withingsStore = useWithingsStore.getState();
-                    const profile = withingsStore.userProfile;
                     const user = useAuth.getState().user;
-                    const firstName = profile?.firstName || user?.displayName?.split(' ')[0] || 'Wayne';
+                    const firstName = user?.displayName?.split(' ')[0] || 'Wayne';
                     const dataContext = getAIContext();
 
                     const prompt = `
@@ -310,8 +306,7 @@ You are Alfred, a proactive AI butler. Scan Master ${firstName}'s data context b
 Focus on:
 1. "Days Since" trackers that look high (e.g. 5+ days since changing sheets).
 2. Gym gaps (e.g. "You haven't hit shoulders in 6 days").
-3. Physical status (e.g. "Your current weight of ${profile?.weight || 'X'}kg indicates you should prioritize protein today").
-4. Pending high-priority study/todo items.
+3. Pending high-priority study/todo items.
 
 Data Context:
 ${dataContext}

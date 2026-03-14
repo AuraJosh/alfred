@@ -18,7 +18,6 @@ export const SleepModule: React.FC = () => {
                     state.fetchVitalData();
                     state.fetchIntradayHR();
                     state.fetchActivityData();
-                    state.fetchProfileData();
                 }
             });
         }
