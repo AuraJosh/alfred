@@ -45,9 +45,9 @@ export const NutritionModule: React.FC = () => {
     };
 
     return (
-        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 flex flex-col md:flex-row gap-8 h-[500px]">
+        <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-5 flex flex-col md:flex-row gap-8 h-auto md:h-[600px]">
             {/* Input Side (1/3 width on md+) */}
-            <div className="w-full md:w-1/3 flex flex-col justify-between shrink-0">
+            <div className="w-full md:w-1/3 flex flex-col shrink-0">
                 <div>
                     <div className="flex items-center gap-2 mb-4">
                         <Utensils className="w-5 h-5 text-orange-400" />
@@ -117,7 +117,7 @@ export const NutritionModule: React.FC = () => {
             </div>
 
             {/* List Side (2/3 width on md+) */}
-            <div className="w-full md:w-2/3 border-t md:border-t-0 md:border-l border-zinc-800 pt-6 md:pt-0 md:pl-8 flex flex-col overflow-hidden">
+            <div className="w-full md:w-2/3 border-t md:border-t-0 md:border-l border-zinc-800 pt-8 md:pt-0 md:pl-8 flex flex-col min-h-[400px] md:min-h-0 overflow-hidden">
                 <div className="flex items-center justify-between mb-4 shrink-0">
                     <div className="flex items-center gap-1 bg-zinc-900 border border-zinc-800 rounded-lg p-1">
                         <button onClick={handlePrev} className="p-1 text-zinc-400 hover:text-white transition-colors hover:bg-zinc-800 rounded">
