@@ -45,23 +45,23 @@ export const useAIStore = create<AIState>()(
                 const weeklySleep = withingsStore.weeklySleepData;
 
                 const gymLogs = useGymStore.getState().workouts.filter(w =>
-                    recentDays.some(date => w.timestamp.startsWith(date))
+                    recentDays.includes(format(new Date(w.timestamp), 'yyyy-MM-dd'))
                 );
 
                 const todos = useTodoStore.getState().todos;
 
                 const nutritionEntries = useNutritionStore.getState().entries.filter(e =>
-                    recentDays.some(date => e.timestamp.startsWith(date))
+                    recentDays.includes(format(new Date(e.timestamp), 'yyyy-MM-dd'))
                 );
 
                 const studyStore = useStudyStore.getState();
                 const studyTasks = studyStore.tasks;
                 const recentStudySessions = studyStore.sessions.filter((s: StudySession) =>
-                    recentDays.some(date => s.timestamp.startsWith(date))
+                    recentDays.includes(format(new Date(s.timestamp), 'yyyy-MM-dd'))
                 );
 
                 const socialLogs = useSocialStore.getState().pubLogs.filter(p =>
-                    recentDays.some(date => p.timestamp.startsWith(date))
+                    recentDays.includes(format(new Date(p.timestamp), 'yyyy-MM-dd'))
                 );
 
                 const generalStore = useStore.getState();
@@ -69,16 +69,18 @@ export const useAIStore = create<AIState>()(
                 const logs = generalStore.logs;
 
                 const scratchpadEntries = useScratchpadStore.getState().entries.filter(e =>
-                    recentDays.some(date => e.timestamp.startsWith(date))
+                    recentDays.includes(format(new Date(e.timestamp), 'yyyy-MM-dd'))
                 );
 
                 const user = useAuth.getState().user;
                 const firstName = user?.displayName?.split(' ')[0] || 'Wayne';
-                const todayFormatted = format(new Date(), 'EEEE, MMMM do, yyyy');
+
+                const now = new Date();
+                const todayStr = format(now, 'EEEE, yyyy-MM-dd HH:mm');
 
                 // Build the Prompt Context
-                let dataContext = `IMPORTANT: Today is ${todayFormatted}. Only refer to activities on this specific date as "today".\n\n`;
-                dataContext += `Here is ${firstName}'s logged data for the past 7 days:\n\n`;
+                let dataContext = `Current Date and Time: ${todayStr}\n`;
+                dataContext += `Here is ${firstName}'s logged data for the past 7 days (including today):\n\n`;
 
                 if (trackers.length > 0) {
                     dataContext += `[TRACKERS & METRICS]\n`;
@@ -147,7 +149,7 @@ export const useAIStore = create<AIState>()(
 
                 dataContext += `\n[TODO LIST]\n`;
                 const pending = todos.filter(t => t.status !== 'done');
-                const recentlyCompleted = todos.filter(t => t.status === 'done' && t.completedAt && recentDays.some(date => t.completedAt?.startsWith(date)));
+                const recentlyCompleted = todos.filter(t => t.status === 'done' && t.completedAt && recentDays.includes(format(new Date(t.completedAt), 'yyyy-MM-dd')));
                 
                 if (pending.length > 0) {
                     dataContext += `Pending Tasks:\n${pending.map(t => `- [${t.type}] ${t.content}`).join('\n')}\n`;
@@ -158,7 +160,7 @@ export const useAIStore = create<AIState>()(
 
                 const workoutStore = useWithingsStore.getState();
                 const withingsWorkouts = workoutStore.workouts.filter(w =>
-                    recentDays.some(date => w.timestamp.startsWith(date))
+                    recentDays.includes(format(new Date(w.timestamp), 'yyyy-MM-dd'))
                 );
 
                 if (withingsWorkouts.length > 0) {
@@ -173,7 +175,7 @@ export const useAIStore = create<AIState>()(
                     if (studyTasks.length > 0) {
                         const sortedTasks = [...studyTasks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
                         const activeStudyTasks = sortedTasks.filter(t => !t.isCompleted);
-                        const completedStudyTasks = sortedTasks.filter(t => t.isCompleted && t.completedAt && recentDays.some(date => t.completedAt?.startsWith(date)));
+                        const completedStudyTasks = sortedTasks.filter(t => t.isCompleted && t.completedAt && recentDays.includes(format(new Date(t.completedAt), 'yyyy-MM-dd')));
                         
                         if (activeStudyTasks.length > 0) {
                             dataContext += `Active Checklist Items:\n${activeStudyTasks.map((t: StudyTask) => `- ${t.content} (Subject: ${t.subject}, Module: ${t.module})`).join('\n')}\n`;
