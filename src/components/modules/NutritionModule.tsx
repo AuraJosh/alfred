@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNutritionStore } from '../../hooks/useNutritionStore';
+import { useWithingsStore } from '../../hooks/useWithingsStore';
 import { useUI } from '../../context/UIContext';
-import { Utensils, Plus, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Utensils, Plus, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Activity, Flame } from 'lucide-react';
 import { isToday, parseISO, subDays, addDays, isSameDay, format } from 'date-fns';
 
 export const NutritionModule: React.FC = () => {
@@ -14,6 +15,19 @@ export const NutritionModule: React.FC = () => {
     const [calories, setCalories] = useState("");
     const [showExpandedForm, setShowExpandedForm] = useState(false);
     const [viewDate, setViewDate] = useState(new Date());
+
+    const { weeklyActivity, fetchActivityData, isConnected } = useWithingsStore();
+
+    React.useEffect(() => {
+        if (isConnected) {
+            fetchActivityData();
+        }
+    }, [isConnected, viewDate]);
+
+    // Find activity for viewDate
+    const dateStr = format(viewDate, 'yyyy-MM-dd');
+    const dayActivity = weeklyActivity.find(a => a.date === dateStr);
+    const burnedCalories = dayActivity?.totalCalories || 0;
 
     const handlePrev = () => setViewDate(prev => subDays(prev, 1));
     const handleNext = () => setViewDate(prev => addDays(prev, 1));
@@ -54,9 +68,45 @@ export const NutritionModule: React.FC = () => {
                         <h2 className="text-lg font-bold text-zinc-100">Calorie Tracker</h2>
                     </div>
 
-                    <div className="text-center py-6 border-b border-zinc-800 mb-6 flex flex-col items-center">
-                        <p className="text-sm text-zinc-500 uppercase tracking-widest mb-1">{isToday(viewDate) ? "Today's Total" : "Total Intake"}</p>
-                        <div className="text-5xl font-black text-white">{viewDateCalories} <span className="text-xl text-zinc-500 font-medium">kcal</span></div>
+                    <div className="border-b border-zinc-800 mb-6 flex flex-col items-center">
+                        <div className="flex flex-col items-center py-4">
+                            <p className="text-[10px] text-zinc-500 uppercase tracking-[0.2em] mb-1 font-bold">Total Intake</p>
+                            <div className="text-4xl font-black text-white">{viewDateCalories} <span className="text-xs text-zinc-500 font-medium">kcal</span></div>
+                        </div>
+
+                        {isConnected && (
+                            <div className="w-full grid grid-cols-2 gap-4 pb-6 pt-2">
+                                <div className="text-center group">
+                                    <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                                        <Flame className="w-3 h-3 text-orange-500" />
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">Burned</p>
+                                    </div>
+                                    <div className="text-lg font-bold text-zinc-300 group-hover:text-white transition-colors">
+                                        {burnedCalories ? `${burnedCalories}` : '--'} <span className="text-[10px] text-zinc-500 font-medium">kcal</span>
+                                    </div>
+                                </div>
+                                <div className="text-center group border-l border-zinc-800/50">
+                                    <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                                        <Activity className="w-3 h-3 text-blue-400" />
+                                        <p className="text-[9px] text-zinc-500 uppercase tracking-widest font-bold">Net Balance</p>
+                                    </div>
+                                    <div className={`text-lg font-bold transition-all ${
+                                        viewDateCalories - burnedCalories > 0 
+                                            ? 'text-red-400' 
+                                            : viewDateCalories - burnedCalories < 0 
+                                                ? 'text-emerald-400' 
+                                                : 'text-zinc-500'
+                                    }`}>
+                                        {burnedCalories ? (
+                                            <>
+                                                {viewDateCalories - burnedCalories > 0 ? '+' : ''}{viewDateCalories - burnedCalories} 
+                                                <span className="text-[10px] opacity-70 font-medium ml-0.5">kcal</span>
+                                            </>
+                                        ) : '--'}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

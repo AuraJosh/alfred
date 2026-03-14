@@ -4,7 +4,7 @@ import { useWithingsStore } from '../../hooks/useWithingsStore';
 import { useUI } from '../../context/UIContext';
 
 export const SleepModule: React.FC = () => {
-    const { isConnected, loading, hasChecked, sleepData, weeklySleepData, connect, disconnect, fetchSleepData, fetchWorkoutData, fetchVitalData, fetchIntradayHR, checkConnection } = useWithingsStore();
+    const { isConnected, loading, hasChecked, sleepData, weeklySleepData, connect, disconnect, fetchSleepData, fetchWorkoutData, fetchVitalData, fetchIntradayHR, fetchActivityData, checkConnection } = useWithingsStore();
     const { showConfirm } = useUI();
     const [showReadinessModal, setShowReadinessModal] = useState(false);
 
@@ -17,6 +17,7 @@ export const SleepModule: React.FC = () => {
                     state.fetchWorkoutData();
                     state.fetchVitalData();
                     state.fetchIntradayHR();
+                    state.fetchActivityData();
                 }
             });
         }
@@ -131,25 +132,26 @@ export const SleepModule: React.FC = () => {
                         </div>
                         {isConnected && (
                             <div className="flex gap-2">
-                                <button onClick={async () => {
-                                    const state = useWithingsStore.getState();
-                                    console.log("--- START WITHINGS TEST ---");
-                                    try {
-                                        await state.fetchSleepData();
-                                        await state.fetchWorkoutData();
-                                        await state.fetchVitalData();
-                                        await state.fetchIntradayHR();
-                                        console.log("Fetch Complete. Check logs above.");
-                                    } catch (e) {
-                                        console.error("Test Error:", e);
-                                    }
-                                    console.log("--- END WITHINGS TEST ---");
-                                }} className="p-2 text-zinc-400 hover:text-amber-400 bg-zinc-900 border border-zinc-800 rounded-lg transition-colors" title="Debug API">
-                                    <Activity className="w-4 h-4" />
-                                </button>
-                                <button onClick={() => { fetchSleepData(); fetchWorkoutData(); fetchVitalData(); fetchIntradayHR(); }} disabled={loading} className="p-2 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-lg transition-colors disabled:opacity-50" title="Refresh Data">
-                                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                                </button>
+                                        <button onClick={async () => {
+                                            const state = useWithingsStore.getState();
+                                            console.log("--- START WITHINGS TEST ---");
+                                            try {
+                                                await state.fetchSleepData();
+                                                await state.fetchWorkoutData();
+                                                await state.fetchVitalData();
+                                                await state.fetchIntradayHR();
+                                                await state.fetchActivityData();
+                                                console.log("Fetch Complete. Check logs above.");
+                                            } catch (e) {
+                                                console.error("Test Error:", e);
+                                            }
+                                            console.log("--- END WITHINGS TEST ---");
+                                        }} className="p-2 text-zinc-400 hover:text-amber-400 bg-zinc-900 border border-zinc-800 rounded-lg transition-colors" title="Debug API">
+                                            <Activity className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={() => { fetchSleepData(); fetchWorkoutData(); fetchVitalData(); fetchIntradayHR(); fetchActivityData(); }} disabled={loading} className="p-2 text-zinc-400 hover:text-white bg-zinc-900 border border-zinc-800 rounded-lg transition-colors disabled:opacity-50" title="Refresh Data">
+                                            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                        </button>
                                 <button onClick={handleDisconnect} className="p-2 text-zinc-400 hover:text-red-400 bg-zinc-900 border border-zinc-800 rounded-lg transition-colors" title="Disconnect Account">
                                     <LogOut className="w-4 h-4" />
                                 </button>
