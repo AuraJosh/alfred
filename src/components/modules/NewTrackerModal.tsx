@@ -136,7 +136,7 @@ export const NewTrackerModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                         className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors cursor-pointer appearance-none"
                                     >
                                         <option value="BOOLEAN">Boolean (Done/Not Done)</option>
-                                        <option value="DOUBLE_BOOLEAN">AM/PM Routine</option>
+                                        <option value="DOUBLE_BOOLEAN">Double Objective (e.g. AM/PM, Shampoo/Cond)</option>
                                         <option value="COUNTER">Counter (e.g. Glasses of Water)</option>
                                         <option value="SCALAR">Scalar (e.g. Weight, Hours)</option>
                                         <option value="RATING">Rating (1-10)</option>
@@ -171,25 +171,33 @@ export const NewTrackerModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                             )}
 
                             {customType === 'DOUBLE_BOOLEAN' && (
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-zinc-500 mb-1.5">Label 1</label>
-                                        <input
-                                            type="text"
-                                            value={customLabels[0]}
-                                            onChange={(e) => setCustomLabels([e.target.value, customLabels[1]])}
-                                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
-                                        />
+                                <div className="space-y-4 p-4 bg-amber-500/5 border border-amber-500/10 rounded-xl animate-in slide-in-from-left-2 duration-300">
+                                    <h4 className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Define Double Objectives</h4>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-[10px] font-medium text-zinc-500 mb-1.5 uppercase tracking-wider">Button Label 1</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={customLabels[0]}
+                                                onChange={(e) => setCustomLabels([e.target.value, customLabels[1]])}
+                                                placeholder="e.g. Morning"
+                                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-medium text-zinc-500 mb-1.5 uppercase tracking-wider">Button Label 2</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={customLabels[1]}
+                                                onChange={(e) => setCustomLabels([customLabels[0], e.target.value])}
+                                                placeholder="e.g. Night"
+                                                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
+                                            />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-zinc-500 mb-1.5">Label 2</label>
-                                        <input
-                                            type="text"
-                                            value={customLabels[1]}
-                                            onChange={(e) => setCustomLabels([customLabels[0], e.target.value])}
-                                            className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500 transition-colors"
-                                        />
-                                    </div>
+                                    <p className="text-[10px] text-zinc-500 italic">This will create two buttons for logging this tracker daily (e.g. Morning/Night, Shampoo/Conditioner).</p>
                                 </div>
                             )}
 

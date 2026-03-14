@@ -171,12 +171,12 @@ export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQ
                         <div className="w-full h-full flex flex-col justify-center items-end gap-1.5 pr-2">
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] text-zinc-400 font-medium">{hasMorning ? new Date(morningLog.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</span>
-                                <span className="text-[9px] text-zinc-500 uppercase tracking-widest leading-none w-6 text-right truncate overflow-hidden" title={label1}>{label1.substring(0, 3)}</span>
+                                <span className="text-[9px] text-zinc-500 uppercase tracking-widest leading-none max-w-[40px] text-right truncate overflow-hidden" title={label1}>{label1}</span>
                                 <div className={`w-2.5 h-2.5 rounded-full shrink-0 border ${hasMorning ? 'border-green-500 bg-green-500' : 'border-zinc-700 bg-zinc-800'}`}></div>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-[10px] text-zinc-400 font-medium">{hasNight ? new Date(nightLog.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--:--'}</span>
-                                <span className="text-[9px] text-zinc-500 uppercase tracking-widest leading-none w-6 text-right truncate overflow-hidden" title={label2}>{label2.substring(0, 3)}</span>
+                                <span className="text-[9px] text-zinc-500 uppercase tracking-widest leading-none max-w-[40px] text-right truncate overflow-hidden" title={label2}>{label2}</span>
                                 <div className={`w-2.5 h-2.5 rounded-full shrink-0 border ${hasNight ? 'border-amber-500 bg-amber-500' : 'border-zinc-700 bg-zinc-800'}`}></div>
                             </div>
                         </div>
