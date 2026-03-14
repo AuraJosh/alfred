@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { Fingerprint, Lock, LogOut } from 'lucide-react';
 import { verifyPasskey } from '../../lib/passkeys';
@@ -15,10 +15,13 @@ export const BiometricLock: React.FC = () => {
         }
     };
 
-    // Auto-trigger on mount
+    // We don't auto-trigger handleUnlock on mount anymore to avoid 
+    // NotAllowedError from browsers that require a user gesture.
+    /*
     useEffect(() => {
         handleUnlock();
     }, []);
+    */
 
     return (
         <div className="fixed inset-0 z-[9999] bg-zinc-950 flex flex-col items-center justify-center p-6 text-center">
