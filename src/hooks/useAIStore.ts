@@ -245,7 +245,7 @@ CRITICAL INSTRUCTION: You must complete the ENTIRE template. Do not stop after "
 `;
 
                     // Call Google Gemini API directly using simple REST to avoid heavy npm SDK
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(url, {
                         method: 'POST',
@@ -322,7 +322,7 @@ FORMAT: Return a JSON array of strings ONLY. No extra text.
 Example: ["It's been 6 days since you changed your sheets; schedule that for today.", "Shoulders haven't been targeted since Tuesday.", "3 project tasks are still pending from yesterday."]
 `;
 
-                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
                     const response = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
