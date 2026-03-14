@@ -18,6 +18,7 @@ import { ShoppingListModule } from '../components/modules/ShoppingListModule';
 import { WithingsWorkoutsModule } from '../components/modules/WithingsWorkoutsModule';
 import { HealthTrendModule } from '../components/modules/HealthTrendModule';
 import { ThreePillarsModule } from '../components/modules/ThreePillarsModule';
+import { ProactiveRemindersModule } from '../components/modules/ProactiveRemindersModule';
 import { ChatWidget } from '../components/modules/ChatWidget';
 
 export const Dashboard: React.FC = () => {
@@ -275,7 +276,10 @@ export const Dashboard: React.FC = () => {
                             </div>
                             
                             {showIntelligence && (
-                                <IntelligenceModule />
+                                <>
+                                    <ProactiveRemindersModule />
+                                    <IntelligenceModule />
+                                </>
                             )}
                         </div>
                     </>

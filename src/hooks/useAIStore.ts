@@ -18,11 +18,16 @@ interface AIState {
         date: string;
         text: string;
     } | null;
+    reminders: {
+        date: string;
+        items: string[];
+    } | null;
     loading: boolean;
     error: string | null;
     setApiKey: (key: string) => void;
     clearApiKey: () => void;
     generateInsight: () => Promise<void>;
+    generateReminders: () => Promise<void>;
     getAIContext: () => string;
 }
 
@@ -31,11 +36,12 @@ export const useAIStore = create<AIState>()(
         (set, get) => ({
             apiKey: null,
             insight: null,
+            reminders: null,
             loading: false,
             error: null,
 
             setApiKey: (key) => set({ apiKey: key, error: null }),
-            clearApiKey: () => set({ apiKey: null, insight: null }),
+            clearApiKey: () => set({ apiKey: null, insight: null, reminders: null }),
 
             getAIContext: () => {
                 const recentDays = Array.from({ length: 7 }, (_, i) => format(subDays(new Date(), i), 'yyyy-MM-dd'));
@@ -281,11 +287,62 @@ CRITICAL INSTRUCTION: You must complete the ENTIRE template. Do not stop after "
                 } finally {
                     set({ loading: false });
                 }
+            },
+
+            generateReminders: async () => {
+                const { apiKey, getAIContext } = get();
+                if (!apiKey) return;
+
+                set({ loading: true, error: null });
+
+                try {
+                    const today = format(new Date(), 'yyyy-MM-dd');
+                    const user = useAuth.getState().user;
+                    const firstName = user?.displayName?.split(' ')[0] || 'Wayne';
+                    const dataContext = getAIContext();
+
+                    const prompt = `
+You are Alfred, a proactive AI butler. Scan Master ${firstName}'s data context below for any "lapses", "past due" tasks, or suggestions.
+Focus on:
+1. "Days Since" trackers that look high (e.g. 5+ days since changing sheets).
+2. Gym gaps (e.g. "You haven't hit shoulders in 6 days").
+3. Pending high-priority study/todo items.
+
+Data Context:
+${dataContext}
+
+Your Objective: 
+Generate exactly 3-4 short, punchy, actionable reminders or observations.
+FORMAT: Return a JSON array of strings ONLY. No extra text.
+Example: ["It's been 6 days since you changed your sheets; schedule that for today.", "Shoulders haven't been targeted since Tuesday.", "3 project tasks are still pending from yesterday."]
+`;
+
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: { temperature: 0.4, response_mime_type: "application/json" }
+                        })
+                    });
+
+                    if (!response.ok) throw new Error("API Error");
+                    const data = await response.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    const items = JSON.parse(text || "[]");
+
+                    set({ reminders: { date: today, items } });
+                } catch (err) {
+                    console.error("Reminder Error:", err);
+                } finally {
+                    set({ loading: false });
+                }
             }
         }),
         {
             name: 'alfred-ai-storage',
-            partialize: (state) => ({ apiKey: state.apiKey, insight: state.insight }),
+            partialize: (state) => ({ apiKey: state.apiKey, insight: state.insight, reminders: state.reminders }),
         }
     )
 );
