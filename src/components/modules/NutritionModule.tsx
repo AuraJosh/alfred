@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNutritionStore } from '../../hooks/useNutritionStore';
 import { useWithingsStore } from '../../hooks/useWithingsStore';
 import { useUI } from '../../context/UIContext';
-import { Utensils, Plus, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Zap } from 'lucide-react';
+import { Utensils, Plus, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, Zap, Info } from 'lucide-react';
 import { isToday, parseISO, subDays, addDays, isSameDay, format } from 'date-fns';
 
 export const NutritionModule: React.FC = () => {
@@ -15,6 +15,7 @@ export const NutritionModule: React.FC = () => {
     const [calories, setCalories] = useState("");
     const [showExpandedForm, setShowExpandedForm] = useState(false);
     const [viewDate, setViewDate] = useState(new Date());
+    const [showBreakdown, setShowBreakdown] = useState(false);
 
     const handlePrev = () => setViewDate(prev => subDays(prev, 1));
     const handleNext = () => setViewDate(prev => addDays(prev, 1));
@@ -81,14 +82,46 @@ export const NutritionModule: React.FC = () => {
                                             style={{ width: `${Math.min(100, (viewDateCalories / totalBurned) * 100)}%` }} 
                                         />
                                     </div>
-                                    <div className="flex items-center justify-between mt-1">
-                                        <div className="flex items-center gap-1.5">
+                                    <div className="flex items-center justify-between mt-1 relative">
+                                        <div className="flex items-center gap-1.5 group cursor-help" onClick={() => setShowBreakdown(!showBreakdown)}>
                                             <Zap className={`w-3.5 h-3.5 ${netBalance <= 0 ? 'text-green-500' : 'text-red-500'}`} />
                                             <span className="text-xs font-bold text-zinc-300">Net Energy</span>
+                                            <Info className="w-3 h-3 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
                                         </div>
                                         <div className={`text-sm font-black ${netBalance <= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                             {netBalance <= 0 ? '' : '+'}{netBalance} <span className="text-[10px] font-bold opacity-70">kcal</span>
                                         </div>
+
+                                        {showBreakdown && (
+                                            <div className="absolute bottom-full left-0 mb-2 w-full bg-zinc-950 border border-zinc-800 rounded-xl p-3 shadow-2xl z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
+                                                <div className="flex justify-between items-center mb-2">
+                                                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Energy Breakdown</span>
+                                                    <button onClick={() => setShowBreakdown(false)} className="text-zinc-600 hover:text-white">
+                                                        <Plus className="w-3 h-3 rotate-45" />
+                                                    </button>
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs text-zinc-400">Intake (Food)</span>
+                                                        <span className="text-xs font-bold text-orange-400">+{viewDateCalories}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs text-zinc-400">Maintenance (BMR)</span>
+                                                        <span className="text-xs font-bold text-indigo-400">-{totalBurned - (dayActivity?.calories || 0)}</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-xs text-zinc-400">Activity (Active)</span>
+                                                        <span className="text-xs font-bold text-emerald-400">-{dayActivity?.calories || 0}</span>
+                                                    </div>
+                                                    <div className="pt-2 border-t border-zinc-800 flex justify-between items-center">
+                                                        <span className="text-xs font-bold text-zinc-100">Daily Balance</span>
+                                                        <span className={`text-xs font-black ${netBalance <= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                                            {netBalance > 0 ? '+' : ''}{netBalance} kcal
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>
