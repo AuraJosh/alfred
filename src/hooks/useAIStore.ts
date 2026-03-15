@@ -129,7 +129,10 @@ export const useAIStore = create<AIState>()(
 
                 if (gymLogs.length > 0) {
                     dataContext += `\n[GYM LOGS - LAST 7 DAYS]\n${gymLogs.map(g => {
-                        const setsInfo = g.sets.map(s => `${s.reps} reps @ ${s.weight}kg`).join(', ');
+                        const isCardio = g.split === 'Cardio';
+                        const setsInfo = g.sets.map(s => 
+                            isCardio ? `${s.minutes} mins` : `${s.reps} reps @ ${s.weight}kg`
+                        ).join(', ');
                         return `- ${format(new Date(g.timestamp), 'EEEE, MMM d')}: ${g.exercise} (${setsInfo})`;
                     }).join('\n')}\n`;
                 }

@@ -12,7 +12,7 @@ const EXERCISES_BY_SPLIT: Record<string, string[]> = {
     "Push (Chest, Shoulders, Triceps)": [],
     "Pull (Back, Biceps)": [],
     "Legs": [],
-    "Cardio": [],
+    "Cardio": ["Skipping", "Running", "Cycling", "Swimming"],
     "Full Body": [],
     "Other": []
 };
@@ -40,7 +40,7 @@ export const GymModule: React.FC = () => {
     const [selectedExercise, setSelectedExercise] = useState(availableExercises[0]);
     const [isCustomExercise, setIsCustomExercise] = useState(false);
     const [customExerciseName, setCustomExerciseName] = useState("");
-    const [currentSets, setCurrentSets] = useState<WorkoutSet[]>([{ reps: 0, weight: 0 }]);
+    const [currentSets, setCurrentSets] = useState<WorkoutSet[]>([{ reps: 0, weight: 0, minutes: 0 }]);
 
     // Expanded Builder State
     const [isExpanded, setIsExpanded] = useState(false);
@@ -54,7 +54,7 @@ export const GymModule: React.FC = () => {
         const firstEx = EXERCISES_BY_SPLIT[selectedSplit]?.[0] || "Custom Exercise";
         setSelectedExercise(firstEx);
         setGraphExercise(firstEx);
-        setCurrentSets([{ reps: 0, weight: 0 }]);
+        setCurrentSets([{ reps: 0, weight: 0, minutes: 0 }]);
     }, [selectedSplit]);
 
     // Filter viewed session entries
@@ -82,8 +82,17 @@ export const GymModule: React.FC = () => {
         const finalExerciseName = isCustomExercise ? customExerciseName.trim() : selectedExercise;
         if (!finalExerciseName) return addToast("Please enter an exercise name.", "error");
 
-        const validSets = currentSets.filter(s => s.reps > 0 && s.weight > 0);
-        if (validSets.length === 0) return addToast("Please enter valid sets (both weight & reps > 0).", "error");
+        const isCardio = selectedSplit === "Cardio";
+        const validSets = currentSets.filter(s =>
+            isCardio ? (s.minutes && s.minutes > 0) : (s.reps && s.reps > 0 && s.weight && s.weight > 0)
+        );
+
+        if (validSets.length === 0) {
+            return addToast(
+                isCardio ? "Please enter valid minutes (> 0)." : "Please enter valid sets (both weight & reps > 0).",
+                "error"
+            );
+        }
 
         const weightNum = parseFloat(bodyWeight);
 
@@ -102,10 +111,10 @@ export const GymModule: React.FC = () => {
             timestamp
         );
 
-        setCurrentSets([{ reps: 0, weight: 0 }]); // reset sets
+        setCurrentSets([{ reps: 0, weight: 0, minutes: 0 }]); // reset sets
         setIsCustomExercise(false);
         setCustomExerciseName("");
-        addToast(`Logged ${validSets.length} sets of ${finalExerciseName}!`, "success");
+        addToast(`Logged ${validSets.length} ${isCardio ? 'entry' : 'sets'} of ${finalExerciseName}!`, "success");
     };
 
     const handleSetChange = (index: number, field: keyof WorkoutSet, value: string) => {
@@ -138,9 +147,17 @@ export const GymModule: React.FC = () => {
             const dateStr = new Date(curr.timestamp).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
             const existing = acc.find(item => item.date === dateStr);
             if (existing) {
-                if (curr.oneRepMax > existing.repsMax) existing.repsMax = curr.oneRepMax;
+                if (curr.split === "Cardio") {
+                    const sessionMinutes = curr.sets.reduce((sum, s) => sum + (s.minutes || 0), 0);
+                    if (sessionMinutes > existing.repsMax) existing.repsMax = sessionMinutes;
+                } else if (curr.oneRepMax && curr.oneRepMax > existing.repsMax) {
+                    existing.repsMax = curr.oneRepMax;
+                }
             } else {
-                acc.push({ date: dateStr, repsMax: curr.oneRepMax });
+                const sessionValue = curr.split === "Cardio"
+                    ? curr.sets.reduce((sum, s) => sum + (s.minutes || 0), 0)
+                    : (curr.oneRepMax || 0);
+                acc.push({ date: dateStr, repsMax: sessionValue });
             }
             return acc;
         }, [] as { date: string, repsMax: number }[]);
@@ -217,23 +234,37 @@ export const GymModule: React.FC = () => {
                     {currentSets.map((set, i) => (
                         <div key={i} className="flex gap-3 items-center group">
                             <span className="text-zinc-500 text-xs font-mono font-medium w-8 bg-zinc-900 px-2 py-1 rounded border border-zinc-800 text-center">{i + 1}</span>
-                            <div className="flex-1 relative">
-                                <input
-                                    type="number" placeholder="0" value={set.weight || ''}
-                                    onChange={(e) => handleSetChange(i, 'weight', e.target.value)}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-3 pr-8 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 tabular-nums"
-                                />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">kg</span>
-                            </div>
-                            <span className="text-zinc-600 font-bold text-sm">×</span>
-                            <div className="flex-1 relative">
-                                <input
-                                    type="number" placeholder="0" value={set.reps || ''}
-                                    onChange={(e) => handleSetChange(i, 'reps', e.target.value)}
-                                    className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-3 pr-8 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 tabular-nums"
-                                />
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">reps</span>
-                            </div>
+
+                            {selectedSplit === "Cardio" ? (
+                                <div className="flex-1 relative">
+                                    <input
+                                        type="number" placeholder="0" value={set.minutes || ''}
+                                        onChange={(e) => handleSetChange(i, 'minutes', e.target.value)}
+                                        className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-3 pr-12 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 tabular-nums"
+                                    />
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">mins</span>
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="number" placeholder="0" value={set.weight || ''}
+                                            onChange={(e) => handleSetChange(i, 'weight', e.target.value)}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-3 pr-8 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 tabular-nums"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">kg</span>
+                                    </div>
+                                    <span className="text-zinc-600 font-bold text-sm">×</span>
+                                    <div className="flex-1 relative">
+                                        <input
+                                            type="number" placeholder="0" value={set.reps || ''}
+                                            onChange={(e) => handleSetChange(i, 'reps', e.target.value)}
+                                            className="w-full bg-zinc-900 border border-zinc-800 rounded-lg pl-3 pr-8 py-2 text-sm text-zinc-100 focus:outline-none focus:border-emerald-500 tabular-nums"
+                                        />
+                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">reps</span>
+                                    </div>
+                                </>
+                            )}
 
                             {currentSets.length > 1 ? (
                                 <button onClick={() => removeSet(i)} className="text-zinc-600 hover:text-red-400 p-1 transition-colors">
@@ -248,7 +279,7 @@ export const GymModule: React.FC = () => {
 
                 <div className="flex gap-3 pt-4 border-t border-zinc-800/50 mt-auto">
                     <button
-                        onClick={() => setCurrentSets([...currentSets, { reps: currentSets[currentSets.length - 1].reps, weight: currentSets[currentSets.length - 1].weight }])}
+                        onClick={() => setCurrentSets([...currentSets, { reps: currentSets[currentSets.length - 1].reps, weight: currentSets[currentSets.length - 1].weight, minutes: currentSets[currentSets.length - 1].minutes }])}
                         className="flex-1 py-3 text-sm font-bold bg-zinc-900 hover:bg-zinc-800 text-zinc-300 rounded-xl transition-colors border border-zinc-800"
                     >
                         + Add Set
@@ -296,8 +327,19 @@ export const GymModule: React.FC = () => {
                                     <h3 className="font-bold text-zinc-100 text-lg">{w.exercise}</h3>
                                 </div>
                                 <div className="text-right">
-                                    <span className="text-xs text-zinc-500 uppercase tracking-wider block leading-none mb-1">Max 1RM</span>
-                                    <span className="font-bold text-emerald-400 block tabular-nums leading-none">{w.oneRepMax} kg</span>
+                                    {w.split === 'Cardio' ? (
+                                        <>
+                                            <span className="text-xs text-zinc-500 uppercase tracking-wider block leading-none mb-1">Total Time</span>
+                                            <span className="font-bold text-emerald-400 block tabular-nums leading-none">
+                                                {w.sets.reduce((sum, s) => sum + (s.minutes || 0), 0)} mins
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="text-xs text-zinc-500 uppercase tracking-wider block leading-none mb-1">Max 1RM</span>
+                                            <span className="font-bold text-emerald-400 block tabular-nums leading-none">{w.oneRepMax} kg</span>
+                                        </>
+                                    )}
                                 </div>
                                 <button
                                     onClick={() => handleDeleteWorkout(w.id, w.exercise)}
@@ -313,8 +355,14 @@ export const GymModule: React.FC = () => {
                                     <thead className="text-xs uppercase bg-transparent text-zinc-500 tracking-wider">
                                         <tr>
                                             <th className="px-2 py-2 w-16">Set</th>
-                                            <th className="px-2 py-2">Weight</th>
-                                            <th className="px-2 py-2">Reps</th>
+                                            {w.split === 'Cardio' ? (
+                                                <th className="px-2 py-2">Duration</th>
+                                            ) : (
+                                                <>
+                                                    <th className="px-2 py-2">Weight</th>
+                                                    <th className="px-2 py-2">Reps</th>
+                                                </>
+                                            )}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-zinc-800/50">
@@ -323,12 +371,20 @@ export const GymModule: React.FC = () => {
                                                 <td className="px-2 py-2.5">
                                                     <span className="bg-zinc-800 text-zinc-400 rounded px-2 py-0.5 text-xs font-mono">{sIdx + 1}</span>
                                                 </td>
-                                                <td className="px-2 py-2.5 tabular-nums">
-                                                    {set.weight} <span className="text-zinc-500 text-xs">kg</span>
-                                                </td>
-                                                <td className="px-2 py-2.5 tabular-nums">
-                                                    {set.reps} <span className="text-zinc-500 text-xs">x</span>
-                                                </td>
+                                                {w.split === 'Cardio' ? (
+                                                    <td className="px-2 py-2.5 tabular-nums">
+                                                        {set.minutes} <span className="text-zinc-500 text-xs">mins</span>
+                                                    </td>
+                                                ) : (
+                                                    <>
+                                                        <td className="px-2 py-2.5 tabular-nums">
+                                                            {set.weight} <span className="text-zinc-500 text-xs">kg</span>
+                                                        </td>
+                                                        <td className="px-2 py-2.5 tabular-nums">
+                                                            {set.reps} <span className="text-zinc-500 text-xs">x</span>
+                                                        </td>
+                                                    </>
+                                                )}
                                             </tr>
                                         ))}
                                     </tbody>
@@ -453,7 +509,15 @@ export const GymModule: React.FC = () => {
                                             </p>
                                         </div>
                                         <div className="text-right z-10 pl-2 bg-gradient-to-l from-zinc-900 via-zinc-900 to-transparent">
-                                            <div className="text-sm font-bold font-mono text-zinc-300">{w.oneRepMax} kg <span className="text-[10px] text-zinc-500 font-sans tracking-wide">1RM</span></div>
+                                            {w.split === 'Cardio' ? (
+                                                <div className="text-sm font-bold font-mono text-zinc-300">
+                                                    {w.sets.reduce((sum, s) => sum + (s.minutes || 0), 0)} mins <span className="text-[10px] text-zinc-500 font-sans tracking-wide">TIME</span>
+                                                </div>
+                                            ) : (
+                                                <div className="text-sm font-bold font-mono text-zinc-300">
+                                                    {w.oneRepMax} kg <span className="text-[10px] text-zinc-500 font-sans tracking-wide">1RM</span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <button
@@ -502,9 +566,14 @@ export const GymModule: React.FC = () => {
                                             contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#fff', borderRadius: '8px', fontSize: '13px' }}
                                             itemStyle={{ color: '#10b981', fontWeight: 'bold' }}
                                             labelStyle={{ color: '#a1a1aa', marginBottom: '4px' }}
-                                            formatter={(value: any) => [`${value} kg`, 'Max 1RM']}
+                                            formatter={(value: any) => {
+                                                const workout = workouts.find(w => w.exercise === graphExercise);
+                                                const unit = workout?.split === 'Cardio' ? 'mins' : 'kg';
+                                                const label = workout?.split === 'Cardio' ? 'Total Time' : 'Max 1RM';
+                                                return [`${value} ${unit}`, label];
+                                            }}
                                         />
-                                        <Line type="monotone" dataKey="repsMax" name="1RM (kg)" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#18181b', strokeWidth: 2 }} activeDot={{ r: 6, fill: '#10b981', strokeWidth: 0 }} />
+                                        <Line type="monotone" dataKey="repsMax" stroke="#10b981" strokeWidth={3} dot={{ r: 4, fill: '#18181b', strokeWidth: 2 }} activeDot={{ r: 6, fill: '#10b981', strokeWidth: 0 }} />
                                     </LineChart>
                                 </ResponsiveContainer>
                             ) : (

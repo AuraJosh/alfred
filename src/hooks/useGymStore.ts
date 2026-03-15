@@ -4,8 +4,9 @@ import { db } from '../lib/firebase';
 import { useAuth } from './useAuth';
 
 export interface WorkoutSet {
-    reps: number;
-    weight: number;
+    reps?: number;
+    weight?: number;
+    minutes?: number;
 }
 
 export interface WorkoutEntry {
@@ -14,7 +15,7 @@ export interface WorkoutEntry {
     exercise: string;
     sets: WorkoutSet[];
     userId: string;
-    oneRepMax: number;
+    oneRepMax?: number;
     split?: string;
     bodyWeight?: number;
 }
@@ -37,6 +38,7 @@ interface GymState {
 
 // Simple 1RM calculation (Epley formula)
 const calculate1RM = (weight: number, reps: number) => {
+    if (!weight || !reps) return 0;
     return Math.round(weight * (1 + reps / 30));
 };
 
@@ -85,12 +87,16 @@ export const useGymStore = create<GymState>((set) => {
             const user = useAuth.getState().user;
             if (!user) throw new Error("Must be logged in");
 
-            // Calculate the max 1RM for this workout session
+            // Calculate the max 1RM for this workout session if it's not cardio
             let sessionMax1RM = 0;
-            sets.forEach(s => {
-                const rm = calculate1RM(s.weight, s.reps);
-                if (rm > sessionMax1RM) sessionMax1RM = rm;
-            });
+            if (split !== 'Cardio') {
+                sets.forEach(s => {
+                    if (s.weight && s.reps) {
+                        const rm = calculate1RM(s.weight, s.reps);
+                        if (rm > sessionMax1RM) sessionMax1RM = rm;
+                    }
+                });
+            }
 
             const data: any = {
                 exercise,
