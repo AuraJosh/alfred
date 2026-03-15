@@ -63,9 +63,6 @@ export const GymModule: React.FC = () => {
     // Auto-infer session meta when viewing a date
     useEffect(() => {
         if (sessionWorkouts.length > 0) {
-            const dayWeight = sessionWorkouts.find(w => w.bodyWeight)?.bodyWeight;
-            if (dayWeight && !bodyWeight) setBodyWeight(dayWeight.toString());
-
             const daySplit = sessionWorkouts[sessionWorkouts.length - 1].split;
             if (daySplit && SPLITS.includes(daySplit) && selectedSplit !== daySplit) {
                 setSelectedSplit(daySplit);
@@ -111,6 +108,7 @@ export const GymModule: React.FC = () => {
             timestamp
         );
 
+        setBodyWeight(""); // Reset body weight input after logging
         setCurrentSets([{ reps: 0, weight: 0, minutes: 0 }]); // reset sets
         setIsCustomExercise(false);
         setCustomExerciseName("");
