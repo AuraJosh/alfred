@@ -12,6 +12,7 @@ export interface Tracker {
         target: number;
         frequency: 'daily' | 'weekly' | 'monthly';
     };
+    holidayPaused?: boolean;
     userId: string;
 }
 

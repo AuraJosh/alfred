@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { useStore } from '../../hooks/useStore';
-import { Activity, Coffee, Moon, Dumbbell, Wallet, Plus } from 'lucide-react';
+import { Activity, Coffee, Moon, Dumbbell, Wallet, Plus, Plane } from 'lucide-react';
 import type { TrackerType } from '../../types';
 
 const PRESET_TRACKERS = [
     { name: 'Brush Teeth', type: 'DOUBLE_BOOLEAN' as TrackerType, icon: Activity, category: 'Health', labels: ['Morning', 'Night'] as [string, string] },
     { name: 'Water (Glasses)', type: 'COUNTER' as TrackerType, icon: Coffee, category: 'Health', viz: 'streak' },
     { name: 'Sleep (Hours)', type: 'SCALAR' as TrackerType, icon: Moon, category: 'Health', viz: 'line_graph' },
-    { name: 'Gym Workout', type: 'COMPLEX' as TrackerType, icon: Dumbbell, category: 'Health' },
-    { name: 'Shopping', type: 'BOOLEAN' as TrackerType, icon: Wallet, category: 'Finance', isDaysSince: true },
-    { name: 'Wash Hair', type: 'DOUBLE_BOOLEAN' as TrackerType, icon: Activity, category: 'Health', isDaysSince: true, labels: ['Shampoo', 'Conditioner'] as [string, string] }
+    { name: 'Gym Workout', type: 'COMPLEX' as TrackerType, icon: Dumbbell, category: 'Health', holidayPaused: true },
+    { name: 'Shopping', type: 'BOOLEAN' as TrackerType, icon: Wallet, category: 'Finance', isDaysSince: true, holidayPaused: true },
+    { name: 'Wash Hair', type: 'DOUBLE_BOOLEAN' as TrackerType, icon: Activity, category: 'Health', isDaysSince: true, labels: ['Shampoo', 'Conditioner'] as [string, string], holidayPaused: true }
 ];
 
 export const NewTrackerModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
@@ -23,6 +23,7 @@ export const NewTrackerModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
     const [customCategory, setCustomCategory] = useState("Custom");
     const [customViz, setCustomViz] = useState("line_graph");
     const [customIsDaysSince, setCustomIsDaysSince] = useState(false);
+    const [customHolidayPaused, setCustomHolidayPaused] = useState(false);
     const [customLabels, setCustomLabels] = useState<[string, string]>(['Morning', 'Night']);
 
     const handleCreatePreset = async (preset: typeof PRESET_TRACKERS[0]) => {
@@ -34,6 +35,7 @@ export const NewTrackerModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                 category: preset.category,
                 visualization: preset.viz || 'line_graph',
                 isDaysSince: preset.isDaysSince || false,
+                holidayPaused: preset.holidayPaused || false,
                 ...(preset.labels ? { labels: preset.labels } : {})
             });
             onClose();
@@ -56,6 +58,7 @@ export const NewTrackerModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                 category: customCategory,
                 visualization: customViz,
                 isDaysSince: customIsDaysSince,
+                holidayPaused: customHolidayPaused,
                 ...(customType === 'DOUBLE_BOOLEAN' ? { labels: customLabels } : {})
             });
             onClose();
@@ -211,7 +214,25 @@ export const NewTrackerModal: React.FC<{ onClose: () => void }> = ({ onClose }) 
                                 <div>
                                     <span className="block text-sm font-medium text-zinc-200">Days Since Tracker</span>
                                     <span className="block text-xs text-zinc-500 mt-1">
-                                        Groups this tracker into a dedicated "Days Since" section, ideal for tracking the time elapsed since rare events (like washing hair, shopping, etc).
+                                        Groups this tracker into a dedicated "Days Since" section, ideal for tracking the time elapsed since rare events.
+                                    </span>
+                                </div>
+                            </label>
+
+                            <label className="flex items-start gap-3 cursor-pointer p-3 border border-zinc-800 rounded-lg bg-zinc-900/50 hover:bg-zinc-900 transition-colors">
+                                <input
+                                    type="checkbox"
+                                    checked={customHolidayPaused}
+                                    onChange={(e) => setCustomHolidayPaused(e.target.checked)}
+                                    className="mt-0.5 w-4 h-4 rounded border-zinc-700 bg-zinc-950 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-zinc-900"
+                                />
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2">
+                                        <span className="block text-sm font-medium text-zinc-200">Holiday Awareness</span>
+                                        <Plane className="w-3 h-3 text-indigo-400" />
+                                    </div>
+                                    <span className="block text-xs text-zinc-500 mt-1">
+                                        When active, streaks and "Days Since" metrics for this tracker will "freeze" during holiday periods (e.g. you don't need to wash hair on holiday).
                                     </span>
                                 </div>
                             </label>

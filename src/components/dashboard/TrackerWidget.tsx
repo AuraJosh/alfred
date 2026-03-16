@@ -1,7 +1,9 @@
 import React from 'react';
 import { differenceInDays, isSameDay, subDays } from 'date-fns';
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, Tooltip } from 'recharts';
-import { X } from 'lucide-react';
+import { X, Plane } from 'lucide-react';
+import { useSettingsStore } from '../../hooks/useSettingsStore';
+import { isWithinInterval, parseISO, startOfDay, eachDayOfInterval } from 'date-fns';
 import type { Tracker, LogEntry } from '../../types';
 
 interface TrackerWidgetProps {
@@ -13,6 +15,28 @@ interface TrackerWidgetProps {
 }
 
 export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQuickLog, onDelete, onClick }) => {
+    const { holidayMode } = useSettingsStore();
+    const isHolidayAffected = tracker.holidayPaused && holidayMode;
+
+    // Helper: Is a specific date within the active holiday?
+    const isHolidayDate = (date: Date) => {
+        if (!isHolidayAffected) return false;
+        return isWithinInterval(startOfDay(date), {
+            start: startOfDay(parseISO(holidayMode.start)),
+            end: startOfDay(parseISO(holidayMode.end))
+        });
+    };
+
+    // Helper: Count holiday days between two dates
+    const countHolidayDaysBetween = (start: Date, end: Date) => {
+        if (!isHolidayAffected) return 0;
+        try {
+            const days = eachDayOfInterval({ start: startOfDay(start), end: startOfDay(end) });
+            return days.filter(d => isHolidayDate(d)).length;
+        } catch {
+            return 0;
+        }
+    };
     // 1. Sort logs from oldest to newest for the chart
     const sortedLogs = [...logs].sort(
         (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -31,7 +55,12 @@ export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQ
 
     if (lastLog) {
         const lastDate = new Date(lastLog.timestamp);
-        const daysSince = differenceInDays(new Date(), lastDate);
+        let daysSince = differenceInDays(new Date(), lastDate);
+
+        if (isHolidayAffected) {
+            const hDays = countHolidayDaysBetween(lastDate, new Date());
+            daysSince = Math.max(0, daysSince - hDays);
+        }
 
         // If it's today, say "Today". Otherwise short time ago
         if (isSameDay(new Date(), lastDate)) {
@@ -75,6 +104,7 @@ export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQ
         currentStreak++;
         while (true) {
             dateToCheck = subDays(dateToCheck, 1);
+            if (isHolidayDate(dateToCheck)) continue; // SKIP HOLIDAY DAYS
             if (isDayCompleted(dateToCheck)) {
                 currentStreak++;
             } else {
@@ -82,10 +112,33 @@ export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQ
             }
         }
     } else {
-        dateToCheck = subDays(dateToCheck, 1);
-        while (isDayCompleted(dateToCheck)) {
-            currentStreak++;
+        // If today is a holiday, we don't break the streak by not doing it.
+        // We look at the day before the holiday started.
+        if (isHolidayDate(dateToCheck)) {
+            // Find the first non-holiday day going backwards
+            while (isHolidayDate(dateToCheck)) {
+                dateToCheck = subDays(dateToCheck, 1);
+            }
+            // Now check that day
+            while (isDayCompleted(dateToCheck)) {
+                currentStreak++;
+                dateToCheck = subDays(dateToCheck, 1);
+                while (isHolidayDate(dateToCheck)) dateToCheck = subDays(dateToCheck, 1);
+            }
+        } else {
             dateToCheck = subDays(dateToCheck, 1);
+            while (true) {
+                if (isHolidayDate(dateToCheck)) {
+                    dateToCheck = subDays(dateToCheck, 1);
+                    continue;
+                }
+                if (isDayCompleted(dateToCheck)) {
+                    currentStreak++;
+                    dateToCheck = subDays(dateToCheck, 1);
+                } else {
+                    break;
+                }
+            }
         }
     }
 
@@ -107,7 +160,11 @@ export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQ
             if (isSameDay(new Date(), lastLogDate)) {
                 currentMetric = "Today";
             } else {
-                const days = differenceInDays(new Date(), lastLogDate);
+                let days = differenceInDays(new Date(), lastLogDate);
+                if (isHolidayAffected) {
+                    const hDays = countHolidayDaysBetween(lastLogDate, new Date());
+                    days = Math.max(0, days - hDays);
+                }
                 currentMetric = `${days > 0 ? days : 1}d`;
             }
         } else {
@@ -138,6 +195,11 @@ export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQ
                     {currentStreak > 0 && (
                         <span className="text-[10px] font-medium px-2 py-1 rounded-full bg-orange-500/10 text-orange-400 flex items-center gap-1" title="Current Streak">
                             🔥 {currentStreak}
+                        </span>
+                    )}
+                    {isHolidayAffected && isHolidayDate(new Date()) && (
+                        <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center gap-1 animate-pulse" title="Holiday Pause Active">
+                            <Plane className="w-3 h-3" /> PAUSED
                         </span>
                     )}
                     <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${isWarning ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>

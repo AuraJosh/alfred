@@ -1,7 +1,9 @@
 import React from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useStore } from '../hooks/useStore';
-import { LogOut, Plus, Activity, Fingerprint, Sparkles, Menu, X as CloseIcon } from 'lucide-react';
+import { LogOut, Plus, Activity, Fingerprint, Sparkles, Menu, X as CloseIcon, Plane } from 'lucide-react';
+import { useSettingsStore } from '../hooks/useSettingsStore';
+import { format, parseISO, isWithinInterval, startOfDay } from 'date-fns';
 import { NewTrackerModal } from '../components/modules/NewTrackerModal';
 import { TrackerWidget } from '../components/dashboard/TrackerWidget';
 import { TrackerExpandedModal } from '../components/dashboard/TrackerExpandedModal';
@@ -29,6 +31,13 @@ export const Dashboard: React.FC = () => {
     const [selectedTrackerId, setSelectedTrackerId] = React.useState<string | null>(null);
     const [showIntelligence, setShowIntelligence] = React.useState(false);
     const [showNav, setShowNav] = React.useState(false);
+    const [showHolidaySetup, setShowHolidaySetup] = React.useState(false);
+    const { holidayMode, setHolidayMode } = useSettingsStore();
+
+    const isCurrentlyOnHoliday = holidayMode && isWithinInterval(startOfDay(new Date()), {
+        start: startOfDay(parseISO(holidayMode.start)),
+        end: startOfDay(parseISO(holidayMode.end))
+    });
 
     const sections = [
         { id: 'trackers', name: 'Primary Trackers' },
@@ -139,6 +148,15 @@ export const Dashboard: React.FC = () => {
                                             <span className="text-[10px] text-zinc-600 group-hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-opacity">Jump</span>
                                         </button>
                                     ))}
+                                    <div className="mt-2 pt-2 border-t border-zinc-800">
+                                        <button
+                                            onClick={() => { setShowHolidaySetup(true); setShowNav(false); }}
+                                            className="w-full text-left px-4 py-2.5 text-sm font-bold text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/5 transition-colors flex items-center gap-2"
+                                        >
+                                            <Plane className="w-4 h-4" />
+                                            Holiday Settings
+                                        </button>
+                                    </div>
                                 </div>
                             </>
                         )}
@@ -176,6 +194,26 @@ export const Dashboard: React.FC = () => {
                     </button>
                 </div>
             </header>
+
+            {isCurrentlyOnHoliday && (
+                <div className="mb-8 p-4 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-between animate-in slide-in-from-top-4 duration-500">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-500/10 rounded-full flex items-center justify-center">
+                            <Plane className="w-5 h-5 text-indigo-400 animate-bounce" />
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-bold text-indigo-100 uppercase tracking-widest">Holiday Mode Active</h3>
+                            <p className="text-xs text-indigo-400/80">Streaks are frozen until {format(parseISO(holidayMode!.end), 'MMMM do')}. Enjoy your rest, Master Wayne.</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => setHolidayMode(null)}
+                        className="px-4 py-1.5 bg-indigo-500 text-white text-xs font-bold rounded-lg hover:bg-indigo-600 transition-colors"
+                    >
+                        End Trip
+                    </button>
+                </div>
+            )}
 
             <main>
 
@@ -334,6 +372,81 @@ export const Dashboard: React.FC = () => {
                     logs={logs.filter(l => l.trackerId === selectedTrackerId)}
                     onClose={() => setSelectedTrackerId(null)}
                 />
+            )}
+
+            {showHolidaySetup && (
+                <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-3 bg-indigo-500/10 rounded-xl">
+                                <Plane className="w-6 h-6 text-indigo-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-white">Holiday Mode</h2>
+                                <p className="text-sm text-zinc-500">Freeze streaks for selected trackers.</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Trip Duration</label>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
+                                        <span className="block text-[10px] text-zinc-600 uppercase mb-1">Starts</span>
+                                        <input 
+                                            type="date" 
+                                            className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none"
+                                            defaultValue={holidayMode?.start || format(new Date(), 'yyyy-MM-dd')}
+                                            onChange={(e) => {
+                                                const start = e.target.value;
+                                                const end = (document.getElementById('holiday-end') as HTMLInputElement).value;
+                                                setHolidayMode({ start, end });
+                                            }}
+                                            id="holiday-start"
+                                        />
+                                    </div>
+                                    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
+                                        <span className="block text-[10px] text-zinc-600 uppercase mb-1">Ends</span>
+                                        <input 
+                                            type="date" 
+                                            className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none"
+                                            defaultValue={holidayMode?.end || format(new Date(Date.now() + 604800000), 'yyyy-MM-dd')}
+                                            onChange={(e) => {
+                                                const end = e.target.value;
+                                                const start = (document.getElementById('holiday-start') as HTMLInputElement).value;
+                                                setHolidayMode({ start, end });
+                                            }}
+                                            id="holiday-end"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl">
+                                <p className="text-xs text-indigo-400 leading-relaxed italic">
+                                    "When active, any trackers marked with 'Holiday Awareness' will ignore these dates in their streak and history calculations. You can tag trackers while creating or editing them."
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mt-8 flex gap-3">
+                            <button 
+                                onClick={() => setShowHolidaySetup(false)}
+                                className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl text-sm transition-colors"
+                            >
+                                Close
+                            </button>
+                            {holidayMode && (
+                                <button 
+                                    onClick={() => { setHolidayMode(null); setShowHolidaySetup(false); }}
+                                    className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl text-sm transition-colors border border-red-500/20"
+                                >
+                                    Cancel Trip
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
             )}
 
             <ChatWidget />
