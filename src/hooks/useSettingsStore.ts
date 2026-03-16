@@ -49,6 +49,7 @@ export const useSettingsStore = create<SettingsState>()(
                     const user = useAuth.getState().user;
                     if (!user) return;
 
+                    set({ holidayMode: period }); // Update local state immediately
                     const docRef = doc(db, 'user_settings', user.uid);
                     await setDoc(docRef, { holidayMode: period }, { merge: true });
                 }

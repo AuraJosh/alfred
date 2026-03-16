@@ -441,7 +441,9 @@ export const Dashboard: React.FC = () => {
                             </div>
 
                             <div className="pt-2">
-                                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Select Trackers to Pause</label>
+                                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">
+                                    {holidayMode ? 'Paused Trackers' : 'Select Trackers to Pause'}
+                                </label>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     {trackers.map(t => (
                                         <button
@@ -451,7 +453,7 @@ export const Dashboard: React.FC = () => {
                                                 if (holidayMode) return;
                                                 await updateTracker(t.id, { holidayPaused: !t.holidayPaused });
                                             }}
-                                            className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${t.holidayPaused ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-zinc-950 border-zinc-800'} ${holidayMode ? 'opacity-70 grayscale-[0.5] cursor-not-allowed' : 'hover:border-zinc-700'}`}
+                                            className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${t.holidayPaused ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-zinc-950 border-zinc-800'} ${holidayMode ? (t.holidayPaused ? 'opacity-100' : 'opacity-40 grayscale cursor-not-allowed') : 'hover:border-zinc-700'}`}
                                         >
                                             <div className="flex flex-col">
                                                 <span className={`text-xs font-bold ${t.holidayPaused ? 'text-indigo-300' : 'text-zinc-300'}`}>{t.name}</span>
@@ -465,6 +467,12 @@ export const Dashboard: React.FC = () => {
                                 </div>
                             </div>
                         </div>
+
+                        {holidayMode && (
+                            <div className="mt-4 p-3 bg-green-500/10 border border-green-500/20 rounded-xl animate-in fade-in slide-in-from-bottom-2">
+                                <p className="text-[10px] font-bold text-green-400 text-center uppercase tracking-widest">Holiday Mode Started - Systems Frozen</p>
+                            </div>
+                        )}
 
                         <div className="mt-8 flex gap-3 shrink-0">
                             {holidayMode ? (
@@ -484,12 +492,12 @@ export const Dashboard: React.FC = () => {
                                 </button>
                             ) : (
                                 <button 
-                                    onClick={() => {
+                                    onClick={async () => {
                                         const s = (document.getElementById('holiday-start') as HTMLInputElement).value;
                                         const e = (document.getElementById('holiday-end') as HTMLInputElement).value;
-                                        setHolidayMode({ start: s, end: e });
-                                        setShowHolidaySetup(false);
+                                        await setHolidayMode({ start: s, end: e });
                                         addToast("Holiday Mode Started!", "success");
+                                        // We stay in the modal so they see the change
                                     }}
                                     className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg active:scale-95"
                                 >
