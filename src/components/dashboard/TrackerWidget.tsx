@@ -287,27 +287,28 @@ export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQ
                 <div className="mt-auto flex gap-2 w-full">
                     <button
                         onClick={(e) => { e.stopPropagation(); onQuickLog(tracker.id, tracker.type, 'morning'); }}
-                        disabled={hasMorning}
+                        disabled={hasMorning || tracker.holidayPaused}
                         className="flex-1 py-1.5 px-1 truncate bg-green-500/10 hover:bg-green-500/20 disabled:opacity-50 disabled:hover:bg-green-500/10 text-green-400 font-medium rounded-lg text-xs transition-colors border border-green-500/20"
                         title={label1}
                     >
-                        {label1}
+                        {tracker.holidayPaused ? 'FROZEN' : label1}
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); onQuickLog(tracker.id, tracker.type, 'night'); }}
-                        disabled={hasNight}
+                        disabled={hasNight || tracker.holidayPaused}
                         className="flex-1 py-1.5 px-1 truncate bg-amber-500/10 hover:bg-amber-500/20 disabled:opacity-50 disabled:hover:bg-amber-500/10 text-amber-400 font-medium rounded-lg text-xs transition-colors border border-amber-500/20"
                         title={label2}
                     >
-                        {label2}
+                        {tracker.holidayPaused ? 'FROZEN' : label2}
                     </button>
                 </div>
             ) : (
                 <button
                     onClick={(e) => { e.stopPropagation(); onQuickLog(tracker.id, tracker.type); }}
-                    className="mt-auto w-full py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-medium rounded-lg text-sm transition-colors border border-amber-500/20"
+                    disabled={tracker.holidayPaused}
+                    className="mt-auto w-full py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 font-medium rounded-lg text-sm transition-colors border border-amber-500/20 disabled:opacity-50 disabled:border-zinc-800 disabled:text-zinc-600"
                 >
-                    Log Entry +
+                    {tracker.holidayPaused ? 'TRIP ACTIVE - FROZEN' : 'Log Entry +'}
                 </button>
             )}
         </div>

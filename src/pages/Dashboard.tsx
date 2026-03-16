@@ -405,10 +405,12 @@ export const Dashboard: React.FC = () => {
                                     <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 focus-within:border-indigo-500/50 transition-colors">
                                         <input 
                                             type="date" 
-                                            className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none cursor-pointer"
+                                            disabled={!!holidayMode}
+                                            className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:text-zinc-500"
                                             defaultValue={holidayMode?.start || format(new Date(), 'yyyy-MM-dd')}
-                                            onClick={(e) => (e.target as any).showPicker?.()}
+                                            onClick={(e) => !holidayMode && (e.target as any).showPicker?.()}
                                             onChange={(e) => {
+                                                if (holidayMode) return;
                                                 const start = e.target.value;
                                                 const end = (document.getElementById('holiday-end') as HTMLInputElement).value;
                                                 setHolidayMode({ start, end });
@@ -422,10 +424,12 @@ export const Dashboard: React.FC = () => {
                                     <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 focus-within:border-indigo-500/50 transition-colors">
                                         <input 
                                             type="date" 
-                                            className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none cursor-pointer"
+                                            disabled={!!holidayMode}
+                                            className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none cursor-pointer disabled:cursor-not-allowed disabled:text-zinc-500"
                                             defaultValue={holidayMode?.end || format(new Date(Date.now() + 604800000), 'yyyy-MM-dd')}
-                                            onClick={(e) => (e.target as any).showPicker?.()}
+                                            onClick={(e) => !holidayMode && (e.target as any).showPicker?.()}
                                             onChange={(e) => {
+                                                if (holidayMode) return;
                                                 const end = e.target.value;
                                                 const start = (document.getElementById('holiday-start') as HTMLInputElement).value;
                                                 setHolidayMode({ start, end });
@@ -442,10 +446,12 @@ export const Dashboard: React.FC = () => {
                                     {trackers.map(t => (
                                         <button
                                             key={t.id}
+                                            disabled={!!holidayMode}
                                             onClick={async () => {
+                                                if (holidayMode) return;
                                                 await updateTracker(t.id, { holidayPaused: !t.holidayPaused });
                                             }}
-                                            className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${t.holidayPaused ? 'bg-indigo-500/10 border-indigo-500/30 ring-1 ring-indigo-500/20' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'}`}
+                                            className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${t.holidayPaused ? 'bg-indigo-500/10 border-indigo-500/30' : 'bg-zinc-950 border-zinc-800'} ${holidayMode ? 'opacity-70 grayscale-[0.5] cursor-not-allowed' : 'hover:border-zinc-700'}`}
                                         >
                                             <div className="flex flex-col">
                                                 <span className={`text-xs font-bold ${t.holidayPaused ? 'text-indigo-300' : 'text-zinc-300'}`}>{t.name}</span>
@@ -470,20 +476,18 @@ export const Dashboard: React.FC = () => {
                                         }
                                         await setHolidayMode(null);
                                         setShowHolidaySetup(false);
-                                        addToast("Holiday mode stopped for all trackers.", "info");
+                                        addToast("Holiday Mode Stopped.", "info");
                                     }}
                                     className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg active:scale-95"
                                 >
-                                    Stop Current Holiday
+                                    Stop Holiday Session
                                 </button>
                             ) : (
                                 <button 
                                     onClick={() => {
-                                        if (!holidayMode) {
-                                            const s = (document.getElementById('holiday-start') as HTMLInputElement).value;
-                                            const e = (document.getElementById('holiday-end') as HTMLInputElement).value;
-                                            setHolidayMode({ start: s, end: e });
-                                        }
+                                        const s = (document.getElementById('holiday-start') as HTMLInputElement).value;
+                                        const e = (document.getElementById('holiday-end') as HTMLInputElement).value;
+                                        setHolidayMode({ start: s, end: e });
                                         setShowHolidaySetup(false);
                                         addToast("Holiday Mode Started!", "success");
                                     }}
