@@ -197,9 +197,13 @@ export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQ
                             🔥 {currentStreak}
                         </span>
                     )}
-                    {isHolidayAffected && isHolidayDate(new Date()) && (
-                        <span className="text-[10px] font-bold px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center gap-1 animate-pulse" title="Holiday Pause Active">
-                            <Plane className="w-3 h-3" /> PAUSED
+                    {tracker.holidayPaused && (
+                        <span 
+                            className={`text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 transition-all ${isHolidayDate(new Date()) ? 'bg-indigo-500 text-white animate-pulse' : 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/20'}`} 
+                            title={isHolidayDate(new Date()) ? "Holiday Mode: ACTIVE" : "Holiday Mode: SCHEDULED"}
+                        >
+                            <Plane className="w-3 h-3" />
+                            {isHolidayDate(new Date()) && <span className="text-[8px] ml-0.5">ACTIVE</span>}
                         </span>
                     )}
                     <span className={`text-[10px] font-medium px-2 py-1 rounded-full ${isWarning ? 'bg-red-500/10 text-red-400' : 'bg-green-500/10 text-green-400'}`}>

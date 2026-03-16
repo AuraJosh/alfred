@@ -407,6 +407,7 @@ export const Dashboard: React.FC = () => {
                                             type="date" 
                                             className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none cursor-pointer"
                                             defaultValue={holidayMode?.start || format(new Date(), 'yyyy-MM-dd')}
+                                            onClick={(e) => (e.target as any).showPicker?.()}
                                             onChange={(e) => {
                                                 const start = e.target.value;
                                                 const end = (document.getElementById('holiday-end') as HTMLInputElement).value;
@@ -423,6 +424,7 @@ export const Dashboard: React.FC = () => {
                                             type="date" 
                                             className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none cursor-pointer"
                                             defaultValue={holidayMode?.end || format(new Date(Date.now() + 604800000), 'yyyy-MM-dd')}
+                                            onClick={(e) => (e.target as any).showPicker?.()}
                                             onChange={(e) => {
                                                 const end = e.target.value;
                                                 const start = (document.getElementById('holiday-start') as HTMLInputElement).value;
@@ -459,26 +461,43 @@ export const Dashboard: React.FC = () => {
                         </div>
 
                         <div className="mt-8 flex gap-3 shrink-0">
-                            <button 
-                                onClick={() => setShowHolidaySetup(false)}
-                                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg active:scale-95"
-                            >
-                                Confirm Selection
-                            </button>
-                            {holidayMode && (
+                            {holidayMode ? (
                                 <button 
                                     onClick={async () => {
+                                        // End for all
                                         for (const t of trackers) {
                                             if (t.holidayPaused) await updateTracker(t.id, { holidayPaused: false });
                                         }
                                         await setHolidayMode(null);
                                         setShowHolidaySetup(false);
+                                        addToast("Holiday mode stopped for all trackers.", "info");
                                     }}
-                                    className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl text-sm transition-colors border border-red-500/20"
+                                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg active:scale-95"
                                 >
-                                    Cancel Holiday
+                                    Stop Current Holiday
+                                </button>
+                            ) : (
+                                <button 
+                                    onClick={() => {
+                                        if (!holidayMode) {
+                                            const s = (document.getElementById('holiday-start') as HTMLInputElement).value;
+                                            const e = (document.getElementById('holiday-end') as HTMLInputElement).value;
+                                            setHolidayMode({ start: s, end: e });
+                                        }
+                                        setShowHolidaySetup(false);
+                                        addToast("Holiday Mode Started!", "success");
+                                    }}
+                                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg active:scale-95"
+                                >
+                                    Confirm Selection
                                 </button>
                             )}
+                            <button 
+                                onClick={() => setShowHolidaySetup(false)}
+                                className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl text-sm transition-colors"
+                            >
+                                Close
+                            </button>
                         </div>
                     </div>
                 </div>
