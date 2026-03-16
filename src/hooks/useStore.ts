@@ -9,6 +9,7 @@ interface TrackerState {
     logs: LogEntry[];
     loading: boolean;
     addTracker: (tracker: Omit<Tracker, 'id' | 'userId'>) => Promise<void>;
+    updateTracker: (id: string, updates: Partial<Tracker>) => Promise<void>;
     addLog: (log: Omit<LogEntry, 'id' | 'timestamp' | 'userId'>) => Promise<void>;
     deleteTracker: (id: string) => Promise<void>;
 }
@@ -62,6 +63,14 @@ export const useStore = create<TrackerState>((set) => {
                 ...trackerData,
                 userId: user.uid,
             });
+        },
+
+        updateTracker: async (id, updates) => {
+            const user = useAuth.getState().user;
+            if (!user) return;
+
+            const ref = doc(db, 'trackers', id);
+            await setDoc(ref, updates, { merge: true });
         },
 
         addLog: async (logData) => {

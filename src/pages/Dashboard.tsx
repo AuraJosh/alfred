@@ -25,7 +25,7 @@ import { ChatWidget } from '../components/modules/ChatWidget';
 
 export const Dashboard: React.FC = () => {
     const { user, signOut, enableBiometrics, isBiometricEnabled } = useAuth();
-    const { trackers, logs, loading, addLog, deleteTracker } = useStore();
+    const { trackers, logs, loading, addLog, deleteTracker, updateTracker } = useStore();
     const { addToast, showPrompt, showConfirm } = useUI();
     const [showNewTracker, setShowNewTracker] = React.useState(false);
     const [selectedTrackerId, setSelectedTrackerId] = React.useState<string | null>(null);
@@ -154,7 +154,7 @@ export const Dashboard: React.FC = () => {
                                             className="w-full text-left px-4 py-2.5 text-sm font-bold text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/5 transition-colors flex items-center gap-2"
                                         >
                                             <Plane className="w-4 h-4" />
-                                            Holiday Settings
+                                            {holidayMode ? 'Manage Holiday' : 'Setup Holiday'}
                                         </button>
                                     </div>
                                 </div>
@@ -207,7 +207,13 @@ export const Dashboard: React.FC = () => {
                         </div>
                     </div>
                     <button 
-                        onClick={() => setHolidayMode(null)}
+                        onClick={async () => {
+                            // Unpause all trackers when manually ending trip
+                            for (const t of trackers) {
+                                if (t.holidayPaused) await (useStore.getState() as any).updateTracker(t.id, { holidayPaused: false });
+                            }
+                            await setHolidayMode(null);
+                        }}
                         className="px-4 py-1.5 bg-indigo-500 text-white text-xs font-bold rounded-lg hover:bg-indigo-600 transition-colors"
                     >
                         End Trip
@@ -376,26 +382,30 @@ export const Dashboard: React.FC = () => {
 
             {showHolidaySetup && (
                 <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[250] flex items-center justify-center p-4">
-                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
-                        <div className="flex items-center gap-3 mb-6">
-                            <div className="p-3 bg-indigo-500/10 rounded-xl">
-                                <Plane className="w-6 h-6 text-indigo-400" />
+                    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 w-full max-w-xl shadow-2xl animate-in fade-in zoom-in duration-200 flex flex-col max-h-[90vh]">
+                        <div className="flex items-center justify-between mb-6 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div className="p-3 bg-indigo-500/10 rounded-xl">
+                                    <Plane className="w-6 h-6 text-indigo-400" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-white">Holiday Mode</h2>
+                                    <p className="text-sm text-zinc-500 italic">"Manual freeze for selected trackers"</p>
+                                </div>
                             </div>
-                            <div>
-                                <h2 className="text-xl font-bold text-white">Holiday Mode</h2>
-                                <p className="text-sm text-zinc-500">Freeze streaks for selected trackers.</p>
-                            </div>
+                            <button onClick={() => setShowHolidaySetup(false)} className="text-zinc-500 hover:text-white">
+                                <CloseIcon className="w-5 h-5" />
+                            </button>
                         </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Trip Duration</label>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                                        <span className="block text-[10px] text-zinc-600 uppercase mb-1">Starts</span>
+                        <div className="space-y-6 overflow-y-auto pr-2 custom-scrollbar">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Start Date</label>
+                                    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 focus-within:border-indigo-500/50 transition-colors">
                                         <input 
                                             type="date" 
-                                            className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none"
+                                            className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none cursor-pointer"
                                             defaultValue={holidayMode?.start || format(new Date(), 'yyyy-MM-dd')}
                                             onChange={(e) => {
                                                 const start = e.target.value;
@@ -405,11 +415,13 @@ export const Dashboard: React.FC = () => {
                                             id="holiday-start"
                                         />
                                     </div>
-                                    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3">
-                                        <span className="block text-[10px] text-zinc-600 uppercase mb-1">Ends</span>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">End Date (Planned)</label>
+                                    <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3 focus-within:border-indigo-500/50 transition-colors">
                                         <input 
                                             type="date" 
-                                            className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none"
+                                            className="w-full bg-transparent text-zinc-100 text-sm focus:outline-none cursor-pointer"
                                             defaultValue={holidayMode?.end || format(new Date(Date.now() + 604800000), 'yyyy-MM-dd')}
                                             onChange={(e) => {
                                                 const end = e.target.value;
@@ -422,26 +434,49 @@ export const Dashboard: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="p-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl">
-                                <p className="text-xs text-indigo-400 leading-relaxed italic">
-                                    "When active, any trackers marked with 'Holiday Awareness' will ignore these dates in their streak and history calculations. You can tag trackers while creating or editing them."
-                                </p>
+                            <div className="pt-2">
+                                <label className="block text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-3">Select Trackers to Pause</label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {trackers.map(t => (
+                                        <button
+                                            key={t.id}
+                                            onClick={async () => {
+                                                await updateTracker(t.id, { holidayPaused: !t.holidayPaused });
+                                            }}
+                                            className={`flex items-center justify-between p-3 rounded-xl border transition-all text-left ${t.holidayPaused ? 'bg-indigo-500/10 border-indigo-500/30 ring-1 ring-indigo-500/20' : 'bg-zinc-950 border-zinc-800 hover:border-zinc-700'}`}
+                                        >
+                                            <div className="flex flex-col">
+                                                <span className={`text-xs font-bold ${t.holidayPaused ? 'text-indigo-300' : 'text-zinc-300'}`}>{t.name}</span>
+                                                <span className="text-[10px] text-zinc-600 uppercase tracking-tighter">{t.category}</span>
+                                            </div>
+                                            <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors ${t.holidayPaused ? 'bg-indigo-500 border-indigo-400' : 'border-zinc-800'}`}>
+                                                {t.holidayPaused && <div className="w-1.5 h-1.5 bg-white rounded-full"></div>}
+                                            </div>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
 
-                        <div className="mt-8 flex gap-3">
+                        <div className="mt-8 flex gap-3 shrink-0">
                             <button 
                                 onClick={() => setShowHolidaySetup(false)}
-                                className="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl text-sm transition-colors"
+                                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg active:scale-95"
                             >
-                                Close
+                                Confirm Selection
                             </button>
                             {holidayMode && (
                                 <button 
-                                    onClick={() => { setHolidayMode(null); setShowHolidaySetup(false); }}
-                                    className="flex-1 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl text-sm transition-colors border border-red-500/20"
+                                    onClick={async () => {
+                                        for (const t of trackers) {
+                                            if (t.holidayPaused) await updateTracker(t.id, { holidayPaused: false });
+                                        }
+                                        await setHolidayMode(null);
+                                        setShowHolidaySetup(false);
+                                    }}
+                                    className="px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-500 font-bold rounded-xl text-sm transition-colors border border-red-500/20"
                                 >
-                                    Cancel Trip
+                                    Cancel Holiday
                                 </button>
                             )}
                         </div>
