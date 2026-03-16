@@ -13,51 +13,67 @@ interface SettingsState {
     holidayMode: HolidayPeriod | null;
     loading: boolean;
     setHolidayMode: (period: HolidayPeriod | null) => Promise<void>;
+    initialize: () => void;
 }
 
 export const useSettingsStore = create<SettingsState>()(
     persist(
-        (set) => {
-            let unsubscribe: () => void;
+        (set) => ({
+            holidayMode: null,
+            loading: false,
 
-            const setupListener = (user: any) => {
-                if (unsubscribe) unsubscribe();
+            initialize: () => {
+                let unsubscribe: (() => void) | null = null;
+                
+                const setupListener = (user: any) => {
+                    if (unsubscribe) {
+                        unsubscribe();
+                        unsubscribe = null;
+                    }
 
-                if (user) {
-                    set({ loading: true });
-                    const docRef = doc(db, 'user_settings', user.uid);
-                    unsubscribe = onSnapshot(docRef, (snap) => {
-                        if (snap.exists()) {
-                            set({ holidayMode: snap.data().holidayMode || null, loading: false });
-                        } else {
-                            set({ holidayMode: null, loading: false });
-                        }
-                    });
-                } else {
-                    set({ holidayMode: null, loading: false });
-                }
-            };
+                    if (user) {
+                        set({ loading: true });
+                        const docRef = doc(db, 'user_settings', user.uid);
+                        unsubscribe = onSnapshot(docRef, (snap) => {
+                            if (snap.exists()) {
+                                set({ holidayMode: snap.data().holidayMode || null, loading: false });
+                            } else {
+                                set({ holidayMode: null, loading: false });
+                            }
+                        }, (error) => {
+                            console.error("Settings listener error:", error);
+                            set({ loading: false });
+                        });
+                    } else {
+                        set({ holidayMode: null, loading: false });
+                    }
+                };
 
-            setupListener(useAuth.getState().user);
-            useAuth.subscribe((state) => setupListener(state.user));
+                // Initial setup
+                setupListener(useAuth.getState().user);
+                
+                // Watch for auth changes
+                useAuth.subscribe((state) => setupListener(state.user));
+            },
 
-            return {
-                holidayMode: null,
-                loading: false,
+            setHolidayMode: async (period) => {
+                const user = useAuth.getState().user;
+                if (!user) return;
 
-                setHolidayMode: async (period) => {
-                    const user = useAuth.getState().user;
-                    if (!user) return;
+                // 1. Update local state immediately for instant UI feedback
+                set({ holidayMode: period });
 
-                    set({ holidayMode: period }); // Update local state immediately
-                    const docRef = doc(db, 'user_settings', user.uid);
-                    await setDoc(docRef, { holidayMode: period }, { merge: true });
-                }
-            };
-        },
+                // 2. Update Firestore
+                const docRef = doc(db, 'user_settings', user.uid);
+                await setDoc(docRef, { holidayMode: period }, { merge: true });
+            }
+        }),
         {
             name: 'alfred-settings-storage',
             partialize: (state) => ({ holidayMode: state.holidayMode }),
         }
     )
 );
+
+// Auto-initialize the store
+useSettingsStore.getState().initialize();

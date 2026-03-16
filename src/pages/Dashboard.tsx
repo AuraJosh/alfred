@@ -32,6 +32,7 @@ export const Dashboard: React.FC = () => {
     const [showIntelligence, setShowIntelligence] = React.useState(false);
     const [showNav, setShowNav] = React.useState(false);
     const [showHolidaySetup, setShowHolidaySetup] = React.useState(false);
+    const [isSavingHoliday, setIsSavingHoliday] = React.useState(false);
     const { holidayMode, setHolidayMode } = useSettingsStore();
 
     const isCurrentlyOnHoliday = holidayMode && isWithinInterval(startOfDay(new Date()), {
@@ -477,31 +478,48 @@ export const Dashboard: React.FC = () => {
                         <div className="mt-8 flex gap-3 shrink-0">
                             {holidayMode ? (
                                 <button 
+                                    disabled={isSavingHoliday}
                                     onClick={async () => {
-                                        // End for all
-                                        for (const t of trackers) {
-                                            if (t.holidayPaused) await updateTracker(t.id, { holidayPaused: false });
+                                        setIsSavingHoliday(true);
+                                        try {
+                                            // End for all
+                                            for (const t of trackers) {
+                                                if (t.holidayPaused) await updateTracker(t.id, { holidayPaused: false });
+                                            }
+                                            await setHolidayMode(null);
+                                            addToast("Holiday Mode Stopped.", "info");
+                                            setShowHolidaySetup(false);
+                                        } finally {
+                                            setIsSavingHoliday(false);
                                         }
-                                        await setHolidayMode(null);
-                                        setShowHolidaySetup(false);
-                                        addToast("Holiday Mode Stopped.", "info");
                                     }}
-                                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg active:scale-95"
+                                    className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg active:scale-95 disabled:opacity-50"
                                 >
-                                    Stop Holiday Session
+                                    {isSavingHoliday ? 'Processing...' : 'Stop Holiday Session'}
                                 </button>
                             ) : (
                                 <button 
+                                    disabled={isSavingHoliday}
                                     onClick={async () => {
                                         const s = (document.getElementById('holiday-start') as HTMLInputElement).value;
                                         const e = (document.getElementById('holiday-end') as HTMLInputElement).value;
-                                        await setHolidayMode({ start: s, end: e });
-                                        addToast("Holiday Mode Started!", "success");
-                                        // We stay in the modal so they see the change
+                                        
+                                        if (!s || !e) {
+                                            addToast("Please select valid dates.", "error");
+                                            return;
+                                        }
+
+                                        setIsSavingHoliday(true);
+                                        try {
+                                            await setHolidayMode({ start: s, end: e });
+                                            addToast("Holiday Mode Started!", "success");
+                                        } finally {
+                                            setIsSavingHoliday(false);
+                                        }
                                     }}
-                                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg active:scale-95"
+                                    className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition-all shadow-lg active:scale-95 disabled:opacity-50"
                                 >
-                                    Confirm Selection
+                                    {isSavingHoliday ? 'Starting Trip...' : 'Confirm Selection'}
                                 </button>
                             )}
                             <button 
