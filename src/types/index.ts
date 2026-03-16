@@ -26,12 +26,20 @@ export interface LogEntry {
     userId: string;
 }
 
+export interface ShoppingList {
+    id: string;
+    name: string;
+    userId: string;
+    createdAt: string;
+}
+
 export interface Todo {
     id: string;
     content: string;
     status: 'todo' | 'in_progress' | 'done';
     type: 'mundane' | 'project' | 'work' | 'shopping';
     parentId?: string;
+    listId?: string; // For multiple shopping lists
     userId: string;
     dueDate?: string;
     createdAt?: string;
