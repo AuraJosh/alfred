@@ -247,7 +247,7 @@ export const TrackerWidget: React.FC<TrackerWidgetProps> = ({ tracker, logs, onQ
                             </div>
                         </div>
                     ) : chartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                             {tracker.visualization === 'streak' || tracker.type === 'COUNTER' ? (
                                 <BarChart data={chartData} margin={{ top: 5, right: 0, bottom: 0, left: 0 }}>
                                     <Tooltip

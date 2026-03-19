@@ -106,25 +106,59 @@ export const useWithingsStore = create<WithingsState>((set) => {
 
         await setDoc(doc(db, 'user_integrations', `${user.uid}_withings`), tokens);
         set({ isConnected: true });
+        return tokens;
     };
 
-    const refreshTokens = async (refreshToken: string) => {
-        const params = new URLSearchParams();
-        params.append('action', 'requesttoken');
-        params.append('grant_type', 'refresh_token');
-        params.append('client_id', CLIENT_ID);
-        params.append('client_secret', CLIENT_SECRET);
-        params.append('refresh_token', refreshToken);
+    let refreshTokenPromise: Promise<string> | null = null;
 
-        const res = await fetch('/api/withings/v2/oauth2', {
-            method: 'POST',
-            body: params
-        });
+    const refreshTokens = async (refreshToken: string): Promise<string> => {
+        if (refreshTokenPromise) return refreshTokenPromise;
 
-        const data = await res.json();
-        if (data.status !== 0) throw new Error('Failed to refresh tokens');
-        await saveTokens(data.body);
-        return data.body.access_token;
+        refreshTokenPromise = (async () => {
+            try {
+                const params = new URLSearchParams();
+                params.append('action', 'requesttoken');
+                params.append('grant_type', 'refresh_token');
+                params.append('client_id', CLIENT_ID);
+                params.append('client_secret', CLIENT_SECRET);
+                params.append('refresh_token', refreshToken);
+
+                const res = await fetch('/api/withings/v2/oauth2', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString()
+                });
+
+                const data = await res.json();
+                if (data.status !== 0) {
+                    console.error("Withings Refresh Failed:", data);
+                    throw new Error('Failed to refresh tokens');
+                }
+                const newTokens = await saveTokens(data.body);
+                return newTokens!.access_token;
+            } finally {
+                refreshTokenPromise = null;
+            }
+        })();
+
+        return refreshTokenPromise;
+    };
+
+    const ensureValidToken = async (): Promise<string | null> => {
+        const tokens = await getTokens();
+        if (!tokens) return null;
+
+        // Refresh if expired or soon to expire (5 min buffer)
+        if (Date.now() > tokens.expires_at - 300000) {
+            try {
+                return await refreshTokens(tokens.refresh_token);
+            } catch (e) {
+                console.error("Token expansion failed, might need reconnection", e);
+                return null;
+            }
+        }
+
+        return tokens.access_token;
     };
 
     return {
@@ -141,7 +175,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
         weeklyActivity: [],
 
         connect: () => {
-            const scope = encodeURIComponent('user.info,user.metrics,user.activity,user.heart,user.sleepevents');
+            const scope = encodeURIComponent('user.info,user.metrics,user.activity,user.sleepevents');
             const state = 'withings_auth_' + Math.random().toString(36).substring(7);
             localStorage.setItem('withings_auth_state', state);
 
@@ -198,50 +232,38 @@ export const useWithingsStore = create<WithingsState>((set) => {
         },
 
         fetchSleepData: async () => {
-            let tokens = await getTokens();
-            if (!tokens) return;
+            const accessToken = await ensureValidToken();
+            if (!accessToken) return;
 
             set({ loading: true });
             try {
-                // Refresh token if expired (giving a 5 minute buffer)
-                if (Date.now() > tokens.expires_at - 300000) {
-                    const newAccess = await refreshTokens(tokens.refresh_token);
-                    tokens.access_token = newAccess;
-                }
-
-
                 const sleepParams = new URLSearchParams({
                     action: 'getsummary',
                     startdateymd: format(subDays(new Date(), 14), 'yyyy-MM-dd'),
                     enddateymd: format(new Date(), 'yyyy-MM-dd'),
-                    data_fields: 'hr_average,hr_min,hr_max,rmssd,sdnn_1,respiration_rate_average,night_events,sleep_score,total_sleep_time,lightsleepduration,deepsleepduration,remsleepduration,wakeupduration'
+                    data_fields: 'hr_average,hr_min,hr_max,rmssd,sdnn_1,respiration_rate_average,night_events,sleep_score,total_sleep_time,light_sleep_duration,deep_sleep_duration,rem_sleep_duration,wakeup_duration'
                 });
 
                 const res = await fetch(`/api/withings/v2/sleep?${sleepParams.toString()}`, {
                     headers: {
-                        'Authorization': `Bearer ${tokens.access_token}`
+                        'Authorization': `Bearer ${accessToken}`
                     }
                 });
 
                 const data = await res.json();
-                console.log("Withings Sleep Summary raw response:", data);
                 if (data.status === 0 && data.body.series && data.body.series.length > 0) {
-                    console.log("RAW SLEEP DATA FOR DIAGNOSTIC (First Item):", data.body.series[0].data);
                     const series = data.body.series;
 
                     const parsedData = series.map((item: any) => {
                         const dataFields = item.data || {};
-                        // Log all available keys for this day to identify non-standard HRV fields
-                        console.log(`FULL DATA AUDIT for ${item.date}:`, Object.keys(dataFields));
-
                         return {
                             date: item.date,
                             duration: dataFields.total_sleep_time || 0,
                             score: dataFields.sleep_score || 0,
-                            light: dataFields.lightsleepduration || 0,
-                            deep: dataFields.deepsleepduration || 0,
-                            rem: dataFields.remsleepduration || 0,
-                            awake: dataFields.wakeupduration || 0,
+                            light: dataFields.light_sleep_duration || 0,
+                            deep: dataFields.deep_sleep_duration || 0,
+                            rem: dataFields.rem_sleep_duration || 0,
+                            awake: dataFields.wakeup_duration || 0,
                             resting_hr: dataFields.hr_average || dataFields.hr_min || 0,
                             hr_min: dataFields.hr_min || 0,
                             hr_avg: dataFields.hr_average || 0,
@@ -258,8 +280,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
                         weeklySleepData: parsedData,
                     });
                 } else if (data.status !== 0) {
-                    // if token was somehow invalid beyond expiry
-                    console.error("Withings fetch error:", data);
+                    console.error("Withings sleep fetch error:", data);
                 }
             } catch (err) {
                 console.error("Failed to fetch sleep data", err);
@@ -269,17 +290,11 @@ export const useWithingsStore = create<WithingsState>((set) => {
         },
 
         fetchWorkoutData: async () => {
-            let tokens = await getTokens();
-            if (!tokens) return;
+            const accessToken = await ensureValidToken();
+            if (!accessToken) return;
 
             set({ loading: true });
             try {
-                // Refresh token if expired
-                if (Date.now() > tokens.expires_at - 300000) {
-                    const newAccess = await refreshTokens(tokens.refresh_token);
-                    tokens.access_token = newAccess;
-                }
-
                 const workoutParams = new URLSearchParams({
                     action: 'getworkouts',
                     startdateymd: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
@@ -288,12 +303,11 @@ export const useWithingsStore = create<WithingsState>((set) => {
 
                 const res = await fetch(`/api/withings/v2/measure?${workoutParams.toString()}`, {
                     headers: {
-                        'Authorization': `Bearer ${tokens.access_token}`
+                        'Authorization': `Bearer ${accessToken}`
                     }
                 });
 
                 const data = await res.json();
-                console.log("Withings Workout raw response:", data);
                 if (data.status === 0 && data.body.series) {
                     const workouts = data.body.series.map((item: any) => ({
                         id: item.id,
@@ -315,17 +329,12 @@ export const useWithingsStore = create<WithingsState>((set) => {
         },
 
         fetchVitalData: async () => {
-            let tokens = await getTokens();
-            if (!tokens) return;
+            const accessToken = await ensureValidToken();
+            if (!accessToken) return;
 
             set({ loading: true });
             try {
-                if (Date.now() > tokens.expires_at - 300000) {
-                    const newAccess = await refreshTokens(tokens.refresh_token);
-                    tokens.access_token = newAccess;
-                }
-
-                // Types: 11 (HR), 71 (Temp), 130+ (Vitals)
+                // Types: 11 (HR), 71 (Temp)
                 const vitalParams = new URLSearchParams({
                     action: 'getmeas',
                     meastypes: '11,71',
@@ -335,12 +344,10 @@ export const useWithingsStore = create<WithingsState>((set) => {
                 });
 
                 const res = await fetch(`/api/withings/v2/measure?${vitalParams.toString()}`, {
-                    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
 
                 const data = await res.json();
-                console.log("Withings Vitals raw response:", data);
-
                 if (data.status === 0 && data.body.measuregrps) {
                     const groups = data.body.measuregrps;
                     const dailyVitals: Record<string, VitalData> = {};
@@ -370,17 +377,11 @@ export const useWithingsStore = create<WithingsState>((set) => {
         },
 
         fetchIntradayHR: async () => {
-            let tokens = await getTokens();
-            if (!tokens) return;
+            const accessToken = await ensureValidToken();
+            if (!accessToken) return;
 
             set({ loading: true });
             try {
-                if (Date.now() > tokens.expires_at - 300000) {
-                    const newAccess = await refreshTokens(tokens.refresh_token);
-                    tokens.access_token = newAccess;
-                }
-
-                // Fetch last 12 hours of heart rate data (intraday)
                 const hrParams = new URLSearchParams({
                     action: 'getmeas',
                     meastypes: '11',
@@ -390,7 +391,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
                 });
 
                 const res = await fetch(`/api/withings/v2/measure?${hrParams.toString()}`, {
-                    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
 
                 const data = await res.json();
@@ -413,16 +414,11 @@ export const useWithingsStore = create<WithingsState>((set) => {
         },
 
         fetchDailyActivity: async () => {
-            let tokens = await getTokens();
-            if (!tokens) return;
+            const accessToken = await ensureValidToken();
+            if (!accessToken) return;
 
             set({ loading: true });
             try {
-                if (Date.now() > tokens.expires_at - 300000) {
-                    const newAccess = await refreshTokens(tokens.refresh_token);
-                    tokens.access_token = newAccess;
-                }
-
                 const activityParams = new URLSearchParams({
                     action: 'getactivity',
                     startdateymd: format(subDays(new Date(), 7), 'yyyy-MM-dd'),
@@ -431,7 +427,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
                 });
 
                 const res = await fetch(`/api/withings/v2/measure?${activityParams.toString()}`, {
-                    headers: { 'Authorization': `Bearer ${tokens.access_token}` }
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
 
                 const data = await res.json();
@@ -447,6 +443,8 @@ export const useWithingsStore = create<WithingsState>((set) => {
                         dailyActivity: activities[activities.length - 1] || null,
                         weeklyActivity: activities 
                     });
+                } else if (data.status !== 0) {
+                    console.error("Withings activity fetch error:", data);
                 }
             } catch (err) {
                 console.error("Failed to fetch daily activity:", err);
