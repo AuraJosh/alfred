@@ -28,6 +28,11 @@ interface StudyState {
     sessions: StudySession[];
     tasks: StudyTask[];
     loading: boolean;
+    activePhase: 'idle' | 'running' | 'paused';
+    activeEvents: Array<{ type: string; time: number }>;
+    activeSubject: string;
+    activeNotes: string;
+    updateActiveSession: (updates: { phase?: 'idle' | 'running' | 'paused'; events?: Array<{ type: string; time: number }>; subject?: string; notes?: string }) => Promise<void>;
     addSession: (subject: string, durationMinutes: number, notes?: string, eventLog?: Array<{ type: string; time: number }>) => Promise<void>;
     addTask: (subject: string, module: string, content: string) => Promise<void>;
     toggleTask: (id: string, isCompleted: boolean) => Promise<void>;
@@ -39,10 +44,12 @@ interface StudyState {
 export const useStudyStore = create<StudyState>((set) => {
     let unsubscribeSessions: () => void;
     let unsubscribeTasks: () => void;
+    let unsubscribeActive: () => void;
 
     const setupListener = (user: any) => {
         if (unsubscribeSessions) unsubscribeSessions();
         if (unsubscribeTasks) unsubscribeTasks();
+        if (unsubscribeActive) unsubscribeActive();
 
         if (user) {
             set({ loading: true });
@@ -58,8 +65,27 @@ export const useStudyStore = create<StudyState>((set) => {
                 const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as StudyTask);
                 set({ tasks, loading: false });
             });
+
+            unsubscribeActive = onSnapshot(doc(db, 'active_study_sessions', user.uid), (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    set({
+                        activePhase: data.phase || 'idle',
+                        activeEvents: data.events || [],
+                        activeSubject: data.subject || 'General',
+                        activeNotes: data.notes || ''
+                    });
+                } else {
+                    set({
+                        activePhase: 'idle',
+                        activeEvents: [],
+                        activeSubject: 'General',
+                        activeNotes: ''
+                    });
+                }
+            });
         } else {
-            set({ sessions: [], tasks: [], loading: false });
+            set({ sessions: [], tasks: [], loading: false, activePhase: 'idle', activeEvents: [], activeSubject: 'General', activeNotes: '' });
         }
     };
 
@@ -69,7 +95,22 @@ export const useStudyStore = create<StudyState>((set) => {
     return {
         sessions: [],
         tasks: [],
+        activePhase: 'idle',
+        activeEvents: [],
+        activeSubject: 'General',
+        activeNotes: '',
         loading: true,
+
+        updateActiveSession: async (updates) => {
+            const user = useAuth.getState().user;
+            if (!user) throw new Error("Must be logged in");
+            
+            const { setDoc } = await import('firebase/firestore');
+            await setDoc(doc(db, 'active_study_sessions', user.uid), {
+                ...updates,
+                userId: user.uid
+            }, { merge: true });
+        },
 
         addSession: async (subject, durationMinutes, notes, eventLog) => {
             const user = useAuth.getState().user;

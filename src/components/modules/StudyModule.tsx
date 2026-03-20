@@ -8,14 +8,10 @@ import { StudyHistoryModal } from './StudyHistoryModal';
 
 const SUBJECTS = ["Maths", "General", "Business"];
 
-type SessionPhase = 'idle' | 'running' | 'paused';
-
 interface SessionEvent {
     type: 'start' | 'pause' | 'resume' | 'stop';
     time: number; // epoch ms
 }
-
-const LS_KEY = 'studySessionState_v2';
 
 /** Sum up active (non-paused) milliseconds from a log of events */
 function calcTotalActiveMs(events: SessionEvent[], nowMs?: number): number {
@@ -80,78 +76,66 @@ const EVENT_DOT_COLORS: Record<SessionEvent['type'], string> = {
 };
 
 export const StudyModule: React.FC = () => {
-    const { sessions, addSession } = useStudyStore();
+    const { 
+        sessions, 
+        addSession, 
+        activePhase: phase, 
+        activeEvents: events, 
+        activeSubject: selectedSubject, 
+        activeNotes: sessionNotes, 
+        updateActiveSession 
+    } = useStudyStore();
 
-    const [phase, setPhase] = useState<SessionPhase>('idle');
-    const [events, setEvents] = useState<SessionEvent[]>([]);
-    const [selectedSubject, setSelectedSubject] = useState(SUBJECTS[0]);
-    const [sessionNotes, setSessionNotes] = useState('');
     const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
     const [showHistoryModal, setShowHistoryModal] = useState(false);
     // Live elapsed display — updated every second only, for the running phase
     const [liveMs, setLiveMs] = useState(0);
 
-    // ── Restore from localStorage on mount ──────────────────────────────────
-    useEffect(() => {
-        const saved = localStorage.getItem(LS_KEY);
-        if (!saved) return;
-        try {
-            const parsed = JSON.parse(saved);
-            if (parsed.phase && parsed.events) {
-                setPhase(parsed.phase);
-                setEvents(parsed.events);
-                if (parsed.selectedSubject) setSelectedSubject(parsed.selectedSubject);
-                if (parsed.sessionNotes) setSessionNotes(parsed.sessionNotes);
-            }
-        } catch { /* ignore */ }
-    }, []);
-
-    // ── Persist to localStorage on change ───────────────────────────────────
-    useEffect(() => {
-        if (phase === 'idle') {
-            localStorage.removeItem(LS_KEY);
-        } else {
-            localStorage.setItem(LS_KEY, JSON.stringify({ phase, events, selectedSubject, sessionNotes }));
-        }
-    }, [phase, events, selectedSubject, sessionNotes]);
-
     // ── Live elapsed ticker (runs only while active) ─────────────────────────
     useEffect(() => {
         if (phase !== 'running') {
-            setLiveMs(calcTotalActiveMs(events));
+            setLiveMs(calcTotalActiveMs(events as SessionEvent[]));
             return;
         }
         const id = setInterval(() => {
-            setLiveMs(calcTotalActiveMs(events, Date.now()));
+            setLiveMs(calcTotalActiveMs(events as SessionEvent[], Date.now()));
         }, 1000);
         // Immediate update
-        setLiveMs(calcTotalActiveMs(events, Date.now()));
+        setLiveMs(calcTotalActiveMs(events as SessionEvent[], Date.now()));
         return () => clearInterval(id);
     }, [phase, events]);
 
     // ── Handlers ─────────────────────────────────────────────────────────────
     const handleStart = useCallback(() => {
         const now = Date.now();
-        setEvents([{ type: 'start', time: now }]);
-        setPhase('running');
-    }, []);
+        updateActiveSession({ 
+            phase: 'running', 
+            events: [{ type: 'start', time: now }],
+            subject: selectedSubject,
+            notes: sessionNotes
+        });
+    }, [updateActiveSession, selectedSubject, sessionNotes]);
 
     const handlePause = useCallback(() => {
         const now = Date.now();
-        setEvents(prev => [...prev, { type: 'pause', time: now }]);
-        setPhase('paused');
-    }, []);
+        updateActiveSession({ 
+            phase: 'paused', 
+            events: [...events, { type: 'pause', time: now }] 
+        });
+    }, [updateActiveSession, events]);
 
     const handleResume = useCallback(() => {
         const now = Date.now();
-        setEvents(prev => [...prev, { type: 'resume', time: now }]);
-        setPhase('running');
-    }, []);
+        updateActiveSession({ 
+            phase: 'running', 
+            events: [...events, { type: 'resume', time: now }] 
+        });
+    }, [updateActiveSession, events]);
 
     const handleStop = useCallback(() => {
         const now = Date.now();
         const stopEvent: SessionEvent = { type: 'stop', time: now };
-        const finalEvents = [...events, stopEvent];
+        const finalEvents = [...(events as SessionEvent[]), stopEvent];
         const totalMs = calcTotalActiveMs(finalEvents);
         const minutes = totalMs / 60000;
 
@@ -159,10 +143,12 @@ export const StudyModule: React.FC = () => {
             addSession(selectedSubject, Number(minutes.toFixed(2)), sessionNotes.trim() || undefined, finalEvents);
         }
 
-        setPhase('idle');
-        setEvents([]);
-        setSessionNotes('');
-    }, [events, selectedSubject, sessionNotes, addSession]);
+        updateActiveSession({ 
+            phase: 'idle', 
+            events: [], 
+            notes: '' 
+        });
+    }, [events, selectedSubject, sessionNotes, addSession, updateActiveSession]);
 
     // ── Graph data ────────────────────────────────────────────────────────────
     const last7Days = Array.from({ length: 7 }).map((_, i) => subDays(new Date(), 6 - i));
@@ -194,7 +180,7 @@ export const StudyModule: React.FC = () => {
 
                     <select
                         value={selectedSubject}
-                        onChange={(e) => setSelectedSubject(e.target.value)}
+                        onChange={(e) => updateActiveSession({ subject: e.target.value })}
                         disabled={isActive}
                         className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500 mb-4 disabled:opacity-50"
                     >
@@ -217,7 +203,7 @@ export const StudyModule: React.FC = () => {
                     <div className={`transition-all duration-300 overflow-hidden ${isActive ? 'max-h-48 opacity-100 mb-4' : 'max-h-0 opacity-0'}`}>
                         <textarea
                             value={sessionNotes}
-                            onChange={(e) => setSessionNotes(e.target.value)}
+                            onChange={(e) => updateActiveSession({ notes: e.target.value })}
                             placeholder="What are you working on?"
                             className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-amber-500 resize-y"
                             rows={3}
@@ -227,11 +213,11 @@ export const StudyModule: React.FC = () => {
                     {/* ── Event log ── */}
                     {isActive && events.length > 0 && (
                         <div className="mb-4 space-y-1.5 border border-zinc-800 rounded-lg p-3 bg-zinc-900/50 overflow-y-auto custom-scrollbar max-h-32 shrink-0">
-                            {events.map((ev, i) => (
+                             {events.map((ev, i) => (
                                 <div key={i} className="flex items-center gap-2.5">
-                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${EVENT_DOT_COLORS[ev.type]}`} />
-                                    <span className={`text-xs font-semibold ${EVENT_COLORS[ev.type]}`}>
-                                        {EVENT_LABELS[ev.type]}:
+                                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${EVENT_DOT_COLORS[ev.type as SessionEvent['type']]}`} />
+                                    <span className={`text-xs font-semibold ${EVENT_COLORS[ev.type as SessionEvent['type']]}`}>
+                                        {EVENT_LABELS[ev.type as SessionEvent['type']]}:
                                     </span>
                                     <span className="text-xs text-zinc-400 font-mono">
                                         {format(new Date(ev.time), 'EEE d MMM, HH:mm:ss')}
