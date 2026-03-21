@@ -8,23 +8,33 @@ export const HealthTrendModule: React.FC = () => {
 
     if (!isConnected || !sleepData) return null;
 
-    // --- LOGIC: Baseline Comparisons ---
-    const last7Days = weeklySleepData.slice(-8, -1); // Last 7 days excluding today
-    const last7Vitals = weeklyVitals.slice(-8, -1);
+    // --- LOGIC: 14-Day Baseline Comparisons with Standard Deviation ---
+    const historicalSleep = weeklySleepData.slice(0, -1); // All days except today
+    const historicalVitals = weeklyVitals.slice(0, -1);
 
-    const getAverage = (arr: any[], key: string) => {
-        const values = arr.map(item => item[key]).filter(v => v > 0);
-        if (values.length === 0) return 0;
-        return values.reduce((a, b) => a + b, 0) / values.length;
+    const getStats = (arr: any[], key: string) => {
+        const values = arr.map(item => item[key]).filter(v => typeof v === 'number' && v > 0);
+        if (values.length === 0) return { avg: 0, sd: 0 };
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        const squareDiffs = values.map(v => Math.pow(v - avg, 2));
+        const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / values.length;
+        const sd = Math.sqrt(avgSquareDiff);
+        return { avg, sd };
     };
 
-    // Baselines
-    const baselineRHR = getAverage(last7Days, 'resting_hr') || getAverage(last7Vitals, 'rhr') || 60;
-    const baselineHRV = getAverage(last7Days, 'hrv') || 40;
-    const baselineResp = getAverage(last7Days, 'respiration_rate') || 14;
-    const baselineTemp = getAverage(last7Vitals, 'temp') || 36.5;
+    // Baselines (14-day Rolling Window)
+    const statsRHR = getStats(historicalSleep, 'resting_hr');
+    const statsHRV = getStats(historicalSleep, 'hrv');
+    const statsResp = getStats(historicalSleep, 'respiration_rate');
+    const statsTemp = getStats(historicalVitals, 'temp');
 
-    // Today's values (prefer vitals for temp/rhr if available, else sleep)
+    // Default fallbacks if data is sparse
+    const baselineRHR = statsRHR.avg || 60;
+    const baselineHRV = statsHRV.avg || 40;
+    const baselineResp = statsResp.avg || 14;
+    const baselineTemp = statsTemp.avg || 36.5;
+
+    // Today's values (prefer latest vitals for temp/rhr if available, else sleep average)
     const currentTemp = vitals?.temp || baselineTemp;
     const currentRHR = vitals?.rhr || sleepData.resting_hr || baselineRHR;
     const currentHRV = sleepData.hrv || baselineHRV;
@@ -33,15 +43,15 @@ export const HealthTrendModule: React.FC = () => {
     // Deviations
     const tempDiff = currentTemp - baselineTemp;
     const rhrDiff = currentRHR - baselineRHR;
-    const hrvDropPercent = baselineHRV > 0 ? ((baselineHRV - currentHRV) / baselineHRV) * 100 : 0;
+    const hrvDiff = baselineHRV - currentHRV; // Drop is positive
     const respDiff = currentResp - baselineResp;
 
-    // Flagging
+    // Flagging Logic (Standard Deviation Thresholds)
     const flags = {
-        temp: tempDiff > 0.5,
-        rhr: rhrDiff > 5,
-        hrv: hrvDropPercent > 20,
-        resp: respDiff > 2
+        temp: tempDiff > 0.5, // Overnight Temperature Fluctuation (VIP)
+        rhr: rhrDiff > (statsRHR.sd * 1.5 || 5), // > 1.5 SD above
+        hrv: hrvDiff > (statsHRV.sd * 1.5 || 10), // > 1.5 SD below (hrvDiff is drop)
+        resp: respDiff > (statsResp.sd * 1.0 || 2) // > 1.0 SD above
     };
 
     const activeFlags = Object.values(flags).filter(Boolean).length;
@@ -53,7 +63,7 @@ export const HealthTrendModule: React.FC = () => {
         border: 'border-emerald-500/20',
         icon: <CheckCircle2 className="w-6 h-6 text-emerald-400" />,
         status: 'Optimal Baseline',
-        insight: 'Your vitals are within their normal rolling range. Your recovery is on track.'
+        insight: 'Your biological markers are within their 14-day standard deviation. Your recovery is stabilized.'
     };
 
     if (activeFlags === 1) {
@@ -62,26 +72,20 @@ export const HealthTrendModule: React.FC = () => {
             bg: 'bg-amber-500/10',
             border: 'border-amber-500/20',
             icon: <AlertTriangle className="w-6 h-6 text-amber-400" />,
-            status: 'Yellow: System Strain',
-            insight: 'One vital metric is deviating. You might be overtrained, stressed, or entering a pre-fever phase. Consider lighter activity.'
+            status: 'System Stress Detected',
+            insight: `One biological marker (${Object.keys(flags).find(k => (flags as any)[k])}) is deviating. Likely overtraining, poor sleep, or early-stage immune response.`
         };
-    } else if (activeFlags === 2) {
+    } else if (activeFlags >= 2) {
+        const isCritical = activeFlags >= 3 || flags.temp;
         level = {
-            color: 'text-orange-500',
-            bg: 'bg-orange-500/10',
-            border: 'border-orange-500/20',
-            icon: <ShieldAlert className="w-6 h-6 text-orange-500" />,
-            status: 'Orange: Immune Warning',
-            insight: 'Multiple metrics are out of bounds. Immune system is under significant strain. Prioritize hydration and sleep.'
-        };
-    } else if (activeFlags >= 3) {
-        level = {
-            color: 'text-red-500',
-            bg: 'bg-red-500/10',
-            border: 'border-red-500/20',
-            icon: <AlertCircle className="w-6 h-6 text-red-500" />,
-            status: 'Red: High Illness Probablity',
-            insight: 'Severe deviations detected across temperature and recovery metrics. High probability of fever or infection. Monitor closely.'
+            color: isCritical ? 'text-red-500' : 'text-orange-500',
+            bg: isCritical ? 'bg-red-500/10' : 'bg-orange-500/10',
+            border: isCritical ? 'border-red-500/20' : 'border-orange-500/20',
+            icon: isCritical ? <AlertCircle className="w-6 h-6 text-red-500" /> : <ShieldAlert className="w-6 h-6 text-orange-500" />,
+            status: isCritical ? 'High Illness Probability' : 'Immune Warning',
+            insight: isCritical 
+                ? 'Multiple critical thresholds breached, including body temperature. High probability of fever or infection. Monitor symptoms closely.'
+                : 'Multiple biological markers have breached their safety thresholds. Your immune system is under significant strain. Prioritize rest.'
         };
     }
 
@@ -145,7 +149,7 @@ export const HealthTrendModule: React.FC = () => {
                         </span>
                     </div>
                     <div className={`text-[10px] font-medium ${flags.hrv ? 'text-amber-400' : 'text-emerald-400'}`}>
-                        {hrvDropPercent > 0 ? (hrvDropPercent.toFixed(0) + '% drop') : 'Optimal'}
+                        {hrvDiff > 0 ? `-${Math.round(hrvDiff)} ms vs baseline` : 'Optimal'}
                     </div>
                 </div>
 
@@ -168,7 +172,7 @@ export const HealthTrendModule: React.FC = () => {
 
             <div className="mt-6 flex items-center gap-4 py-2 border-t border-zinc-900">
                 <p className="text-[10px] text-zinc-500 italic">
-                    Trend analysis based on 7-day rolling average. Withings ScanWatch Nova sensor data used.
+                    Trend analysis based on 14-day rolling average (Standard Deviation model). Withings ScanWatch Nova sensor data used.
                 </p>
             </div>
         </div>
