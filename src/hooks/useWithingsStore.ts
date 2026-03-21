@@ -241,7 +241,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
                     action: 'getsummary',
                     startdateymd: format(subDays(new Date(), 14), 'yyyy-MM-dd'),
                     enddateymd: format(new Date(), 'yyyy-MM-dd'),
-                    data_fields: 'hr_average,hr_min,hr_max,rmssd,sdnn_1,respiration_rate_average,night_events,sleep_score,total_sleep_time,light_sleep_duration,deep_sleep_duration,rem_sleep_duration,wakeup_duration'
+                    data_fields: 'hr_average,hr_min,hr_max,rmssd,sdnn_1,rr_average,night_events,sleep_score,total_sleep_time,lightsleepduration,deepsleepduration,remsleepduration,wakeupduration'
                 });
 
                 const res = await fetch(`/api/withings/v2/sleep?${sleepParams.toString()}`, {
@@ -260,15 +260,15 @@ export const useWithingsStore = create<WithingsState>((set) => {
                             date: item.date,
                             duration: dataFields.total_sleep_time || 0,
                             score: dataFields.sleep_score || 0,
-                            light: dataFields.light_sleep_duration || 0,
-                            deep: dataFields.deep_sleep_duration || 0,
-                            rem: dataFields.rem_sleep_duration || 0,
-                            awake: dataFields.wakeup_duration || 0,
+                            light: dataFields.lightsleepduration || 0,
+                            deep: dataFields.deepsleepduration || 0,
+                            rem: dataFields.remsleepduration || 0,
+                            awake: dataFields.wakeupduration || 0,
                             resting_hr: dataFields.hr_average || dataFields.hr_min || 0,
                             hr_min: dataFields.hr_min || 0,
                             hr_avg: dataFields.hr_average || 0,
                             hrv: dataFields.rmssd || dataFields.sdnn_1 || 0,
-                            respiration_rate: dataFields.respiration_rate_average || 0,
+                            respiration_rate: dataFields.rr_average || 0,
                         };
                     });
 
