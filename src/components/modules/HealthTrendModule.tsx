@@ -4,7 +4,7 @@ import { useWithingsStore } from '../../hooks/useWithingsStore';
 
 
 export const HealthTrendModule: React.FC = () => {
-    const { isConnected, sleepData, weeklySleepData, vitals, weeklyVitals } = useWithingsStore();
+    const { isConnected, sleepData, weeklySleepData, weeklyVitals } = useWithingsStore();
 
     if (!isConnected || !sleepData) return null;
 
@@ -34,21 +34,27 @@ export const HealthTrendModule: React.FC = () => {
     const baselineResp = statsResp.avg || 14;
     const baselineTemp = statsTemp.avg || 36.5;
 
-    // Today's values (prefer latest vitals for temp/rhr if available, else sleep average)
-    const currentTemp = vitals?.temp || baselineTemp;
-    const currentRHR = vitals?.rhr || sleepData.resting_hr || baselineRHR;
+    // --- ACCURACY FIX: Match Vitals date with Sleep Record date ---
+    const matchingVital = weeklyVitals.find(v => v.date === sleepData.date);
+    
+    // Today's values (STRICTLY overnight averages for consistency)
+    const currentRHR = sleepData.resting_hr || matchingVital?.rhr || baselineRHR;
     const currentHRV = sleepData.hrv || baselineHRV;
     const currentResp = sleepData.respiration_rate || baselineResp;
+    
+    // Temperature Logic (Prioritize Nova Temp Deviation if available)
+    const currentTempDev = (sleepData as any).temp_deviation || (matchingVital as any)?.temp_deviation || (matchingVital?.temp ? matchingVital.temp - baselineTemp : 0);
+    const displayTemp = matchingVital?.temp || (baselineTemp + currentTempDev);
 
     // Deviations
-    const tempDiff = currentTemp - baselineTemp;
+    const tempDiff = currentTempDev;
     const rhrDiff = currentRHR - baselineRHR;
     const hrvDiff = baselineHRV - currentHRV; // Drop is positive
     const respDiff = currentResp - baselineResp;
 
     // Flagging Logic (Standard Deviation Thresholds)
     const flags = {
-        temp: tempDiff > 0.5, // Overnight Temperature Fluctuation (VIP)
+        temp: Math.abs(tempDiff) > 0.5, // Overnight Temperature Fluctuation (VIP)
         rhr: rhrDiff > (statsRHR.sd * 1.5 || 5), // > 1.5 SD above
         hrv: hrvDiff > (statsHRV.sd * 1.5 || 10), // > 1.5 SD below (hrvDiff is drop)
         resp: respDiff > (statsResp.sd * 1.0 || 2) // > 1.0 SD above
@@ -113,7 +119,7 @@ export const HealthTrendModule: React.FC = () => {
                     </div>
                     <div className="flex items-end gap-1 mb-1">
                         <span className={`text-xl font-bold tabular-nums ${flags.temp ? 'text-red-400' : 'text-zinc-100'}`}>
-                            {currentTemp.toFixed(1)}°C
+                            {displayTemp.toFixed(1)}°C
                         </span>
                     </div>
                     <div className={`text-[10px] font-medium ${tempDiff > 0 ? (flags.temp ? 'text-red-400' : 'text-amber-400') : 'text-emerald-400'}`}>

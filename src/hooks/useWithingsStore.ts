@@ -239,9 +239,9 @@ export const useWithingsStore = create<WithingsState>((set) => {
             try {
                 const sleepParams = new URLSearchParams({
                     action: 'getsummary',
-                    startdateymd: format(subDays(new Date(), 14), 'yyyy-MM-dd'),
+                    startdateymd: format(subDays(new Date(), 30), 'yyyy-MM-dd'), // Fetch 30 days for better 14-day baseline buffers
                     enddateymd: format(new Date(), 'yyyy-MM-dd'),
-                    data_fields: 'hr_average,hr_min,hr_max,rmssd,sdnn_1,rr_average,night_events,sleep_score,total_sleep_time,lightsleepduration,deepsleepduration,remsleepduration,wakeupduration'
+                    data_fields: 'hr_average,hr_min,hr_max,rmssd,sdnn_1,rr_average,night_events,sleep_score,total_sleep_time,lightsleepduration,deepsleepduration,remsleepduration,wakeupduration,skin_temp,temp_deviation,hr_average'
                 });
 
                 const res = await fetch(`/api/withings/v2/sleep?${sleepParams.toString()}`, {
@@ -269,6 +269,7 @@ export const useWithingsStore = create<WithingsState>((set) => {
                             hr_avg: dataFields.hr_average || 0,
                             hrv: dataFields.rmssd || dataFields.sdnn_1 || 0,
                             respiration_rate: dataFields.rr_average || 0,
+                            temp_deviation: dataFields.temp_deviation || 0,
                         };
                     });
 
@@ -334,12 +335,12 @@ export const useWithingsStore = create<WithingsState>((set) => {
 
             set({ loading: true });
             try {
-                // Types: 11 (HR), 71 (Temp)
+                // Types: 11 (HR), 71 (Body Temp), 73 (Skin Temp), 105 (Overnight Temp Deviation)
                 const vitalParams = new URLSearchParams({
                     action: 'getmeas',
-                    meastypes: '11,71',
+                    meastypes: '11,71,73,105',
                     category: '1', // real measures
-                    startdate: Math.floor(subDays(new Date(), 14).getTime() / 1000).toString(),
+                    startdate: Math.floor(subDays(new Date(), 30).getTime() / 1000).toString(),
                     enddate: Math.floor(new Date().getTime() / 1000).toString(),
                 });
 
@@ -360,6 +361,8 @@ export const useWithingsStore = create<WithingsState>((set) => {
                             const value = m.value * Math.pow(10, m.unit);
                             if (m.type === 71) dailyVitals[date].temp = value;
                             if (m.type === 11) dailyVitals[date].rhr = value;
+                            if (m.type === 73 && !dailyVitals[date].temp) dailyVitals[date].temp = value; // Fallback to skin temp
+                            if (m.type === 105) (dailyVitals[date] as any).temp_deviation = value;
                         });
                     });
 
