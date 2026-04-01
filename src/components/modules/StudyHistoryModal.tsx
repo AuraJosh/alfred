@@ -160,34 +160,42 @@ export const StudyHistoryModal: React.FC<StudyHistoryModalProps> = ({ sessions, 
                                             </select>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className="flex flex-col items-end gap-1">
-                                                <input
-                                                    type="datetime-local"
-                                                    defaultValue={format(parseISO(session.timestamp), "yyyy-MM-dd'T'HH:mm")}
-                                                    onChange={async (e) => {
-                                                        const newDate = new Date(e.target.value).toISOString();
-                                                        await updateSession(session.id, { timestamp: newDate });
-                                                    }}
-                                                    className="bg-zinc-950 border border-zinc-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-zinc-500 focus:outline-none focus:border-purple-500/50 cursor-pointer"
-                                                />
+                                            <div className="flex flex-col items-end gap-1.5">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="relative group/dur">
-                                                        <input
-                                                            type="number"
-                                                            defaultValue={Math.round(session.durationMinutes)}
-                                                            onBlur={async (e) => {
-                                                                const val = parseFloat(e.target.value);
-                                                                if (!isNaN(val) && val >= 0) {
-                                                                    await updateSession(session.id, { durationMinutes: val });
-                                                                }
-                                                            }}
-                                                            className="w-16 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-sm font-mono font-bold text-zinc-300 focus:outline-none focus:border-purple-500"
-                                                        />
-                                                        <span className="text-[10px] text-zinc-600 absolute -right-6 top-1/2 -translate-y-1/2">min</span>
+                                                    <Clock className="w-3 h-3 text-zinc-600" />
+                                                    <input
+                                                        type="datetime-local"
+                                                        defaultValue={format(parseISO(session.timestamp), "yyyy-MM-dd'T'HH:mm")}
+                                                        onChange={async (e) => {
+                                                            const newDate = new Date(e.target.value).toISOString();
+                                                            await updateSession(session.id, { timestamp: newDate });
+                                                        }}
+                                                        className="bg-zinc-950 border border-zinc-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-zinc-500 focus:outline-none focus:border-purple-500/50 cursor-pointer hover:border-zinc-700 transition-colors"
+                                                    />
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex flex-col items-end">
+                                                        <span className="text-sm font-mono font-bold text-purple-400 bg-purple-500/5 px-2 py-0.5 rounded border border-purple-500/10">
+                                                            {formatMinutes(session.durationMinutes)}
+                                                        </span>
+                                                        <div className="flex items-center gap-1 mt-1">
+                                                            <input
+                                                                type="number"
+                                                                defaultValue={Math.round(session.durationMinutes)}
+                                                                onBlur={async (e) => {
+                                                                    const val = parseFloat(e.target.value);
+                                                                    if (!isNaN(val) && val >= 0) {
+                                                                        await updateSession(session.id, { durationMinutes: val });
+                                                                    }
+                                                                }}
+                                                                className="w-12 bg-transparent text-[10px] font-mono text-zinc-600 text-right focus:outline-none focus:text-zinc-300 transition-colors"
+                                                            />
+                                                            <span className="text-[9px] text-zinc-700 uppercase font-bold tracking-tighter">min</span>
+                                                        </div>
                                                     </div>
                                                     <button
                                                         onClick={() => handleDeleteSession(session.id)}
-                                                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
+                                                        className="p-1.5 text-zinc-600 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
                                                         title="Delete Session"
                                                     >
                                                         <Trash2 className="w-4 h-4" />
