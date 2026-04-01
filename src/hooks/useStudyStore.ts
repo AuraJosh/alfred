@@ -33,7 +33,7 @@ interface StudyState {
     activeSubject: string;
     activeNotes: string;
     updateActiveSession: (updates: { phase?: 'idle' | 'running' | 'paused'; events?: Array<{ type: string; time: number }>; subject?: string; notes?: string }) => Promise<void>;
-    addSession: (subject: string, durationMinutes: number, notes?: string, eventLog?: Array<{ type: string; time: number }>) => Promise<void>;
+    addSession: (subject: string, durationMinutes: number, notes?: string, eventLog?: Array<{ type: string; time: number }>, timestamp?: string) => Promise<void>;
     addTask: (subject: string, module: string, content: string) => Promise<void>;
     toggleTask: (id: string, isCompleted: boolean) => Promise<void>;
     deleteTask: (id: string) => Promise<void>;
@@ -112,7 +112,7 @@ export const useStudyStore = create<StudyState>((set) => {
             }, { merge: true });
         },
 
-        addSession: async (subject, durationMinutes, notes, eventLog) => {
+        addSession: async (subject, durationMinutes, notes, eventLog, timestamp) => {
             const user = useAuth.getState().user;
             if (!user) throw new Error("Must be logged in");
 
@@ -121,7 +121,7 @@ export const useStudyStore = create<StudyState>((set) => {
                 durationMinutes,
                 ...(notes ? { notes } : {}),
                 ...(eventLog ? { eventLog } : {}),
-                timestamp: new Date().toISOString(),
+                timestamp: timestamp || new Date().toISOString(),
                 userId: user.uid,
             });
         },

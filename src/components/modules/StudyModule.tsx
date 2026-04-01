@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useStudyStore } from '../../hooks/useStudyStore';
-import { BrainCircuit, PlayCircle, StopCircle, PauseCircle, CheckCircle2, BarChart2, History } from 'lucide-react';
+import { BrainCircuit, PlayCircle, StopCircle, PauseCircle, CheckCircle2, BarChart2, History, Clock } from 'lucide-react';
 import { format, subDays, isSameDay, parseISO } from 'date-fns';
 import { StudyChecklist } from './StudyChecklist';
 import { StudyAnalyticsModal } from './StudyAnalyticsModal';
@@ -189,13 +189,33 @@ export const StudyModule: React.FC = () => {
 
                     {/* Live elapsed while running or paused */}
                     {isActive && (
-                        <div className={`text-center py-4 transition-colors duration-300`}>
+                        <div className={`text-center py-4 transition-all duration-300 relative group`}>
                             <p className="text-xs text-zinc-500 uppercase tracking-widest mb-1">
                                 {phase === 'paused' ? 'Active time (paused)' : 'Active time'}
                             </p>
-                            <div className={`text-5xl font-black tabular-nums ${phase === 'running' ? 'text-amber-400' : 'text-blue-400'}`}>
+                            <div className={`text-5xl font-black tabular-nums transition-colors ${phase === 'running' ? 'text-amber-400' : 'text-blue-400'}`}>
                                 {formatDuration(liveMs)}
                             </div>
+                            
+                            {/* Adjust start time button */}
+                            <button 
+                                onClick={() => {
+                                    const mins = prompt("Add/Subtract minutes from current session (e.g. 10 or -5):", "0");
+                                    if (mins) {
+                                        const msOffset = parseFloat(mins) * 60000;
+                                        if (!isNaN(msOffset)) {
+                                            const newEvents = events.map((ev, idx) => 
+                                                idx === 0 ? { ...ev, time: ev.time - msOffset } : ev
+                                            );
+                                            updateActiveSession({ events: newEvents as any });
+                                        }
+                                    }
+                                }}
+                                className="absolute -right-2 top-1/2 -translate-y-1/2 p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-500 hover:text-amber-400 opacity-0 group-hover:opacity-100 transition-all"
+                                title="Adjust start time"
+                            >
+                                <Clock className="w-4 h-4" />
+                            </button>
                         </div>
                     )}
 
@@ -229,13 +249,22 @@ export const StudyModule: React.FC = () => {
 
                     {/* ── Buttons ── */}
                     {phase === 'idle' && (
-                        <button
-                            onClick={handleStart}
-                            className="w-full py-4 flex items-center justify-center gap-2 rounded-xl font-bold text-lg bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-900/20 transition-all"
-                        >
-                            <PlayCircle className="w-5 h-5" />
-                            Start Focus Session
-                        </button>
+                        <div className="flex flex-col gap-3">
+                            <button
+                                onClick={handleStart}
+                                className="w-full py-4 flex items-center justify-center gap-2 rounded-xl font-bold text-lg bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-900/20 transition-all"
+                            >
+                                <PlayCircle className="w-5 h-5" />
+                                Start Focus Session
+                            </button>
+                            <button
+                                onClick={() => setShowHistoryModal(true)}
+                                className="w-full py-2 flex items-center justify-center gap-2 rounded-lg text-xs font-semibold text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 transition-all border border-transparent hover:border-zinc-800"
+                            >
+                                <History className="w-3.5 h-3.5" />
+                                Forgot to start? Edit History
+                            </button>
+                        </div>
                     )}
 
                     {phase === 'running' && (

@@ -98,15 +98,41 @@ export const StudyHistoryModal: React.FC<StudyHistoryModalProps> = ({ sessions, 
                 </div>
 
                 {/* Summary Row */}
-                <div className="px-6 py-4 bg-zinc-900/10 shrink-0 flex items-center gap-4">
-                    <div className="flex items-center gap-2 bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-lg border border-purple-500/20">
-                        <Clock className="w-4 h-4" />
-                        <span className="text-sm font-bold">Total: {formatMinutes(totalMinutes)}</span>
+                <div className="px-6 py-4 bg-zinc-900/10 shrink-0 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 bg-purple-500/10 text-purple-400 px-3 py-1.5 rounded-lg border border-purple-500/20">
+                            <Clock className="w-4 h-4" />
+                            <span className="text-sm font-bold">Total: {formatMinutes(totalMinutes)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 bg-amber-500/10 text-amber-400 px-3 py-1.5 rounded-lg border border-amber-500/20">
+                            <BookOpen className="w-4 h-4" />
+                            <span className="text-sm font-bold">{daySessions.length} Sessions</span>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2 bg-amber-500/10 text-amber-400 px-3 py-1.5 rounded-lg border border-amber-500/20">
-                        <BookOpen className="w-4 h-4" />
-                        <span className="text-sm font-bold">{daySessions.length} Sessions</span>
-                    </div>
+                    <button
+                        onClick={async () => {
+                            const subject = prompt("Select Subject (Maths, General, Business):", "General");
+                            if (subject && SUBJECTS.includes(subject)) {
+                                const duration = prompt("Duration in minutes:", "30");
+                                if (duration) {
+                                    const mins = parseFloat(duration);
+                                    if (!isNaN(mins) && mins > 0) {
+                                        // Use the selected day's date but maybe with a default time
+                                        const now = new Date();
+                                        const sessionDate = new Date(selectedDate);
+                                        sessionDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
+                                        
+                                        const { addSession } = useStudyStore.getState();
+                                        await addSession(subject, mins, "Manual Entry", undefined, sessionDate.toISOString());
+                                    }
+                                }
+                            }
+                        }}
+                        className="flex items-center gap-2 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs font-bold text-zinc-300 hover:text-white hover:bg-zinc-800 transition-all shadow-lg active:scale-95"
+                    >
+                        <Clock className="w-3.5 h-3.5" />
+                        Log Manual Session
+                    </button>
                 </div>
 
                 {/* Sessions List */}
@@ -134,20 +160,40 @@ export const StudyHistoryModal: React.FC<StudyHistoryModalProps> = ({ sessions, 
                                             </select>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-xs font-mono text-zinc-500 flex items-center gap-1">
-                                                <Clock className="w-3 h-3" />
-                                                {format(parseISO(session.timestamp), 'h:mm a')}
-                                            </span>
-                                            <span className="text-sm font-mono font-bold text-zinc-300 bg-zinc-950 px-2 py-1 rounded-md border border-zinc-800">
-                                                {formatMinutes(session.durationMinutes)}
-                                            </span>
-                                            <button
-                                                onClick={() => handleDeleteSession(session.id)}
-                                                className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
-                                                title="Delete Session"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
+                                            <div className="flex flex-col items-end gap-1">
+                                                <input
+                                                    type="datetime-local"
+                                                    defaultValue={format(parseISO(session.timestamp), "yyyy-MM-dd'T'HH:mm")}
+                                                    onChange={async (e) => {
+                                                        const newDate = new Date(e.target.value).toISOString();
+                                                        await updateSession(session.id, { timestamp: newDate });
+                                                    }}
+                                                    className="bg-zinc-950 border border-zinc-800 rounded px-1.5 py-0.5 text-[10px] font-mono text-zinc-500 focus:outline-none focus:border-purple-500/50 cursor-pointer"
+                                                />
+                                                <div className="flex items-center gap-2">
+                                                    <div className="relative group/dur">
+                                                        <input
+                                                            type="number"
+                                                            defaultValue={Math.round(session.durationMinutes)}
+                                                            onBlur={async (e) => {
+                                                                const val = parseFloat(e.target.value);
+                                                                if (!isNaN(val) && val >= 0) {
+                                                                    await updateSession(session.id, { durationMinutes: val });
+                                                                }
+                                                            }}
+                                                            className="w-16 bg-zinc-950 border border-zinc-800 rounded px-2 py-1 text-sm font-mono font-bold text-zinc-300 focus:outline-none focus:border-purple-500"
+                                                        />
+                                                        <span className="text-[10px] text-zinc-600 absolute -right-6 top-1/2 -translate-y-1/2">min</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleDeleteSession(session.id)}
+                                                        className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-colors border border-transparent hover:border-red-500/20"
+                                                        title="Delete Session"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
