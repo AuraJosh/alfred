@@ -15,8 +15,15 @@ interface TodoState {
 export const useTodoStore = create<TodoState>((set) => {
     let unsubscribeTodos: () => void;
 
+    let lastUserId: string | null = null;
     const setupListener = (user: any) => {
-        if (unsubscribeTodos) unsubscribeTodos();
+        const currentUserId = user?.uid || null;
+        if (currentUserId === lastUserId) return;
+        lastUserId = currentUserId;
+
+        if (unsubscribeTodos) {
+            unsubscribeTodos();
+        }
 
         if (user) {
             set({ loading: true });
@@ -25,6 +32,11 @@ export const useTodoStore = create<TodoState>((set) => {
             unsubscribeTodos = onSnapshot(qTodos, (snapshot) => {
                 const todos = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Todo);
                 set({ todos, loading: false });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Todo listener error:", error);
+                }
+                set({ loading: false });
             });
         } else {
             set({ todos: [], loading: false });

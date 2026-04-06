@@ -18,7 +18,12 @@ export const useStore = create<TrackerState>((set) => {
     let unsubscribeTrackers: () => void;
     let unsubscribeLogs: () => void;
 
+    let lastUserId: string | null = null;
     const setupListener = (user: any) => {
+        const currentUserId = user?.uid || null;
+        if (currentUserId === lastUserId) return;
+        lastUserId = currentUserId;
+
         if (unsubscribeTrackers) unsubscribeTrackers();
         if (unsubscribeLogs) unsubscribeLogs();
 
@@ -29,12 +34,21 @@ export const useStore = create<TrackerState>((set) => {
             unsubscribeTrackers = onSnapshot(qTrackers, (snapshot) => {
                 const trackers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Tracker);
                 set({ trackers, loading: false });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Trackers listener error:", error);
+                }
+                set({ loading: false });
             });
 
             const qLogs = query(collection(db, 'logs'), where('userId', '==', user.uid));
             unsubscribeLogs = onSnapshot(qLogs, (snapshot) => {
                 const logs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as LogEntry);
                 set({ logs });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Logs listener error:", error);
+                }
             });
         } else {
             set({ trackers: [], logs: [], loading: false });

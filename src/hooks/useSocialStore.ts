@@ -23,7 +23,12 @@ interface SocialState {
 export const useSocialStore = create<SocialState>((set) => {
     let unsubscribePub: () => void;
 
+    let lastUserId: string | null = null;
     const setupListener = (user: any) => {
+        const currentUserId = user?.uid || null;
+        if (currentUserId === lastUserId) return;
+        lastUserId = currentUserId;
+
         if (unsubscribePub) unsubscribePub();
 
         if (user) {
@@ -33,6 +38,11 @@ export const useSocialStore = create<SocialState>((set) => {
             unsubscribePub = onSnapshot(qPub, (snapshot) => {
                 const pubLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as PubLog);
                 set({ pubLogs, loading: false });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Pub logs listener error:", error);
+                }
+                set({ loading: false });
             });
         } else {
             set({ pubLogs: [], loading: false });

@@ -46,7 +46,12 @@ export const useGymStore = create<GymState>((set) => {
     let unsubscribeWorkouts: () => void;
     let unsubscribeCalories: () => void;
 
+    let lastUserId: string | null = null;
     const setupListener = (user: any) => {
+        const currentUserId = user?.uid || null;
+        if (currentUserId === lastUserId) return;
+        lastUserId = currentUserId;
+
         if (unsubscribeWorkouts) unsubscribeWorkouts();
         if (unsubscribeCalories) unsubscribeCalories();
 
@@ -57,12 +62,21 @@ export const useGymStore = create<GymState>((set) => {
             unsubscribeWorkouts = onSnapshot(qWorkouts, (snapshot) => {
                 const workouts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as WorkoutEntry);
                 set({ workouts, loading: false });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Workouts listener error:", error);
+                }
+                set({ loading: false });
             });
 
             const qCalories = query(collection(db, 'calories'), where('userId', '==', user.uid));
             unsubscribeCalories = onSnapshot(qCalories, (snapshot) => {
                 const calories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as CalorieEntry);
                 set({ calories });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Calories listener error:", error);
+                }
             });
         } else {
             set({ workouts: [], calories: [], loading: false });

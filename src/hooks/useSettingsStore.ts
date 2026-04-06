@@ -24,8 +24,13 @@ export const useSettingsStore = create<SettingsState>()(
 
             initialize: () => {
                 let unsubscribe: (() => void) | null = null;
+                let lastUserId: string | null = null;
                 
                 const setupListener = (user: any) => {
+                    const currentUserId = user?.uid || null;
+                    if (currentUserId === lastUserId) return;
+                    lastUserId = currentUserId;
+
                     if (unsubscribe) {
                         unsubscribe();
                         unsubscribe = null;
@@ -41,7 +46,9 @@ export const useSettingsStore = create<SettingsState>()(
                                 set({ holidayMode: null, loading: false });
                             }
                         }, (error) => {
-                            console.error("Settings listener error:", error);
+                            if (error.code !== 'permission-denied') {
+                                console.error("Settings listener error:", error);
+                            }
                             set({ loading: false });
                         });
                     } else {

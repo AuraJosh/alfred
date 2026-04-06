@@ -22,7 +22,12 @@ interface NutritionState {
 export const useNutritionStore = create<NutritionState>((set) => {
     let unsubscribe: () => void;
 
+    let lastUserId: string | null = null;
     const setupListener = (user: any) => {
+        const currentUserId = user?.uid || null;
+        if (currentUserId === lastUserId) return;
+        lastUserId = currentUserId;
+
         if (unsubscribe) unsubscribe();
 
         if (user) {
@@ -35,6 +40,11 @@ export const useNutritionStore = create<NutritionState>((set) => {
             unsubscribe = onSnapshot(q, (snapshot) => {
                 const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as NutritionEntry);
                 set({ entries, loading: false });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Nutrition listener error:", error);
+                }
+                set({ loading: false });
             });
         } else {
             set({ entries: [], loading: false });

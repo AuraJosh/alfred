@@ -46,7 +46,12 @@ export const useStudyStore = create<StudyState>((set) => {
     let unsubscribeTasks: () => void;
     let unsubscribeActive: () => void;
 
+    let lastUserId: string | null = null;
     const setupListener = (user: any) => {
+        const currentUserId = user?.uid || null;
+        if (currentUserId === lastUserId) return;
+        lastUserId = currentUserId;
+
         if (unsubscribeSessions) unsubscribeSessions();
         if (unsubscribeTasks) unsubscribeTasks();
         if (unsubscribeActive) unsubscribeActive();
@@ -58,12 +63,21 @@ export const useStudyStore = create<StudyState>((set) => {
             unsubscribeSessions = onSnapshot(qSessions, (snapshot) => {
                 const sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as StudySession);
                 set({ sessions });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Study sessions listener error:", error);
+                }
             });
 
             const qTasks = query(collection(db, 'study_tasks'), where('userId', '==', user.uid));
             unsubscribeTasks = onSnapshot(qTasks, (snapshot) => {
                 const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as StudyTask);
                 set({ tasks, loading: false });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Study tasks listener error:", error);
+                }
+                set({ loading: false });
             });
 
             unsubscribeActive = onSnapshot(doc(db, 'active_study_sessions', user.uid), (snapshot) => {
@@ -82,6 +96,10 @@ export const useStudyStore = create<StudyState>((set) => {
                         activeSubject: 'General',
                         activeNotes: ''
                     });
+                }
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Active study session listener error:", error);
                 }
             });
         } else {

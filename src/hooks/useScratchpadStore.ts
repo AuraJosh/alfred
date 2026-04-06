@@ -20,16 +20,25 @@ interface ScratchpadState {
 export const useScratchpadStore = create<ScratchpadState>((set) => {
     let unsubscribe: () => void;
 
+    let lastUserId: string | null = null;
     const setupListener = (user: any) => {
+        const currentUserId = user?.uid || null;
+        if (currentUserId === lastUserId) return;
+        lastUserId = currentUserId;
+
         if (unsubscribe) unsubscribe();
 
         if (user) {
             set({ loading: true });
-
             const q = query(collection(db, 'scratchpad'), where('userId', '==', user.uid));
             unsubscribe = onSnapshot(q, (snapshot) => {
                 const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as ScratchpadEntry);
                 set({ entries, loading: false });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Scratchpad listener error:", error);
+                }
+                set({ loading: false });
             });
         } else {
             set({ entries: [], loading: false });

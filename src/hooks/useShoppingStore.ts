@@ -15,7 +15,12 @@ interface ShoppingStore {
 export const useShoppingStore = create<ShoppingStore>((set) => {
     let unsubscribeLists: () => void;
 
+    let lastUserId: string | null = null;
     const setupListener = (user: any) => {
+        const currentUserId = user?.uid || null;
+        if (currentUserId === lastUserId) return;
+        lastUserId = currentUserId;
+
         if (unsubscribeLists) unsubscribeLists();
 
         if (user) {
@@ -25,6 +30,11 @@ export const useShoppingStore = create<ShoppingStore>((set) => {
             unsubscribeLists = onSnapshot(qLists, (snapshot) => {
                 const lists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as ShoppingList);
                 set({ lists, loading: false });
+            }, (error) => {
+                if (error.code !== 'permission-denied') {
+                    console.error("Shopping lists listener error:", error);
+                }
+                set({ loading: false });
             });
         } else {
             set({ lists: [], loading: false });
